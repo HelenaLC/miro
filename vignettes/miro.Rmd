@@ -1,0 +1,52 @@
+---
+title: "`miro`: Visuals for Spatial (Transcript)Omics"
+author:
+- name: Helena L. Crowell
+  affiliation: National Center for Genomics Analysis (CNAG), Barcelona, Spain
+output:
+  BiocStyle::html_document
+abstract: |
+  Description of your vignette
+vignette: |
+  %\VignetteIndexEntry{miro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+package: "`r BiocStyle::pkg_ver('miro')`"
+---
+
+# Preamble
+
+## Introduction
+
+```{r load-data, message=FALSE, warning=FALSE}
+
+```
+
+## Dependencies
+
+```{r load-libs, message=FALSE, warning=FALSE}
+
+```
+
+# Centroids
+
+# Polygons
+
+# Molecules
+
+# Layering
+
+# Appendix
+
+## Session info {- .smaller}
+
+<style type="text/css">
+.smaller {
+  font-size: 10px
+}
+</style>
+
+```{r si, echo=FALSE}
+sessionInfo()
+```

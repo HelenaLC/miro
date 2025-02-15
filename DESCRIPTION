@@ -1,0 +1,30 @@
+Package: miro
+Type: Software
+Version: 0.99.0
+Depends: R (>= 4.4)
+Title: Visuals for Spatial (Transcript)Omics
+Description: To. Do.
+Authors@R: person(
+    "Helena L.", "Crowell", 
+    role=c("aut", "cre"),
+    email="helena@crowell.eu",
+    comment=c(ORCID="0000-0002-4801-1767"))
+Imports:
+    arrow,
+    dplyr,
+    ggplot2,
+    methods,
+    pals,
+    patchwork,
+    S4Vectors,
+    SpatialExperiment,
+    SummarizedExperiment
+Suggests: 
+    knitr,
+    BiocStyle,
+    testthat (>= 3.0.0)
+License: GPL-3
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+License: Artistic-2.0
+Config/testthat/edition: 3
