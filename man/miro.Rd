@@ -2,11 +2,52 @@
 % Please edit documentation in R/miro.R
 \name{miro}
 \alias{miro}
+\alias{miro,SpatialExperiment-method}
+\alias{miro,SingleCellExperiment-method}
+\alias{miro,data.frame-method}
 \title{spatial (transcript)omics visualization}
+\usage{
+\S4method{miro}{SpatialExperiment}(dat, pol = NULL, mol = NULL, ...)
+
+\S4method{miro}{SingleCellExperiment}(dat, pol = NULL, mol = NULL, f = NULL, assay = "logcounts", ...)
+
+\S4method{miro}{data.frame}(
+  dat,
+  xy = FALSE,
+  dat_xy = NULL,
+  dat_id = NULL,
+  dat_pal = NULL,
+  dat_aes = list(),
+  pol = NULL,
+  pol_xy = NULL,
+  pol_id = NULL,
+  pol_pal = NULL,
+  pol_aes = list(),
+  mol = NULL,
+  mol_xy = NULL,
+  mol_id = NULL,
+  mol_pal = NULL,
+  mol_aes = list(),
+  mol_key = NULL,
+  keys = NULL,
+  fov_id = NULL,
+  fov_lab = FALSE,
+  fov_box = FALSE,
+  f = NULL,
+  c = NULL,
+  s = 0.1,
+  t = c("n", "q", "z"),
+  hl = NULL,
+  na = NULL,
+  thm = c("w", "b")
+)
+}
 \arguments{
 \item{dat}{...}
 
 \item{pol, mol}{character string; polygons/molecules .parquet}
+
+\item{...}{optional arguments passed between methods}
 
 \item{pol_xy, mol_xy}{character vector; spatial coordinates}
 
@@ -26,8 +67,6 @@ fill of non-highlighted observations will be set to NA}
 
 \item{thm}{character string; visualize using
 either `"b"`lack or `"w"`hite base theme}
-
-\item{...}{optional arguments passed between methods}
 }
 \value{
 `ggplot`
@@ -42,8 +81,24 @@ pa <- OSTA.data_load(id)
 dir.create(td <- tempfile())
 unzip(pa, exdir=td)
 
+library(SpatialExperiment)
 library(SpatialExperimentIO)
-(spe <- readXeniumSXE(td))
+spe <- readXeniumSXE(td)
 
+xy <- spatialCoords(spe)
+spe <- spe[, 
+  xy[,1]>1500 & xy[,1]<2000 & 
+  xy[,2]<1700 & xy[,2]>1200 ]
+    
+p <- "cell_boundaries"
+m <- "transcripts"   
+ 
+miro(spe, pol=p, f="cell_area") 
+ 
+miro(spe, pol=p, mol=m, 
+  pol=p, pol_aes=list(size=0.1),
+  mol=m, mol_aes=list(size=0.1),
+  keys=c("VWF", "EGFR", "PECAM1"),
+  mol_pal=c("gold", "cyan", "magenta"))
 
 }

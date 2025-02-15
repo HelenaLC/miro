@@ -26,5 +26,4 @@ Suggests:
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-License: Artistic-2.0
 Config/testthat/edition: 3

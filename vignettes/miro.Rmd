@@ -19,21 +19,59 @@ package: "`r BiocStyle::pkg_ver('miro')`"
 
 ## Introduction
 
-```{r load-data, message=FALSE, warning=FALSE}
-
-```
-
 ## Dependencies
 
-```{r load-libs, message=FALSE, warning=FALSE}
+```{r load-libs}
+library(OSTA.data)
+library(SpatialExperiment)
+library(SpatialExperimentIO)
+```
 
+```{r load-data, message=FALSE, warning=FALSE}
+# retrieve Xenium dataset
+id <- "Xenium_HumanColon_Oliveria"
+pa <- OSTA.data_load(id)
+dir.create(td <- tempfile())
+unzip(pa, exdir=td)
+(spe <- readXeniumSXE(td))
+# crop for demo
+xy <- spatialCoords(spe)
+spe <- spe[, 
+    xy[,1]>1500 & xy[,1]<2000 & 
+    xy[,2]<1700 & xy[,2]>1200 ]
 ```
 
 # Centroids
 
+```{r}
+devtools::load_all()
+miro(spe, 
+    xy=TRUE,
+    pol=p,
+    pol_aes=list(size=0.1),
+    dat_aes=list(col="cell_area", size=0.2))
+```
+
 # Polygons
 
+```{r}
+devtools::load_all()
+p <- "cell_boundaries"
+m <- "transcripts"
+miro(spe, pol=p, f="cell_area")
+```
+
 # Molecules
+
+```{r fig.height=3.5, fig.width=4}
+miro(spe, 
+    dat_aes=list(size=0.2),
+    f="red", #c="black",
+    #pol=p, pol_aes=list(size=0.1),
+    # mol=m, mol_aes=list(size=0.1),
+    # keys=c("VWF", "EGFR", "PECAM1"),
+    mol_pal=c("gold", "cyan", "magenta"))
+```
 
 # Layering
 

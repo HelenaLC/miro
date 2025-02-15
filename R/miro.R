@@ -26,10 +26,27 @@
 #' dir.create(td <- tempfile())
 #' unzip(pa, exdir=td)
 #' 
+#' library(SpatialExperiment)
 #' library(SpatialExperimentIO)
-#' (spe <- readXeniumSXE(td))
+#' spe <- readXeniumSXE(td)
 #' 
+#' xy <- spatialCoords(spe)
+#' spe <- spe[, 
+#'   xy[,1]>1500 & xy[,1]<2000 & 
+#'   xy[,2]<1700 & xy[,2]>1200 ]
+#'     
+#' p <- "cell_boundaries"
+#' m <- "transcripts"   
+#'  
+#' miro(spe, pol=p, f="cell_area") 
+#'  
+#' miro(spe, pol=p, mol=m, 
+#'   pol=p, pol_aes=list(size=0.1),
+#'   mol=m, mol_aes=list(size=0.1),
+#'   keys=c("VWF", "EGFR", "PECAM1"),
+#'   mol_pal=c("gold", "cyan", "magenta"))
 #' 
+#' @import ggplot2
 NULL
 
 setGeneric("miro", \(dat, ...) miro(dat, ...))
@@ -37,19 +54,21 @@ setGeneric("miro", \(dat, ...) miro(dat, ...))
 #' @importFrom SpatialExperiment spatialCoordsNames spatialCoords
 #' @importFrom SummarizedExperiment colData<-
 #' @importFrom methods as
+#' @rdname miro
 #' @export
-setMethod("miro", "SpatialExperiment", \(dat, pol, mol=NULL, ...) {
+setMethod("miro", "SpatialExperiment", \(dat, pol=NULL, mol=NULL, ...) {
     xy <- spatialCoordsNames(dat)
     colData(dat)[xy] <- spatialCoords(dat)
     dat <- as(dat, "SingleCellExperiment")
-    miro(dat, pol, mol, ...)
+    miro(dat, pol, mol, dat_xy=xy, ...)
 })
 
 #' @importFrom SummarizedExperiment assay assayNames colData
 #' @importFrom S4Vectors metadata
+#' @rdname miro
 #' @export
 setMethod("miro", "SingleCellExperiment", 
-    \(dat, pol, mol=NULL, f=NULL, assay="logcounts", ...) {
+    \(dat, pol=NULL, mol=NULL, f=NULL, assay="logcounts", ...) {
         # validity
         ps <- if (!is.null(pol)) {
             stopifnot(is.character(pol) && length(pol) == 1)
@@ -74,45 +93,29 @@ setMethod("miro", "SingleCellExperiment",
 #' @importFrom SummarizedExperiment assay colData
 #' @importFrom dplyr filter mutate pull
 #' @importFrom arrow read_parquet
+#' @rdname miro
 #' @export
-setMethod("miro", "data.frame", \(dat, dat_id=NULL, 
-    pol=NULL, pol_pal=NULL, pol_aes=list(), pol_xy=NULL, pol_id=NULL,
-    mol=NULL, mol_pal=NULL, mol_aes=list(), mol_xy=NULL, mol_id=NULL, 
+setMethod("miro", "data.frame", \(dat, 
+    # centroids
+    xy=FALSE, dat_xy=NULL, dat_id=NULL, dat_pal=NULL, dat_aes=list(), 
+    # polygons
+    pol=NULL, pol_xy=NULL, pol_id=NULL, pol_pal=NULL, pol_aes=list(), 
+    # molecules
+    mol=NULL, mol_xy=NULL, mol_id=NULL, mol_pal=NULL, mol_aes=list(), 
     mol_key=NULL, keys=NULL,
     fov_id=NULL, fov_lab=FALSE, fov_box=FALSE,
     f=NULL, c=NULL, s=0.1, 
-    t=c("n", "q", "z"), hl=NULL, na=NULL, thm=c("b", "w")) {
+    t=c("n", "q", "z"), hl=NULL, na=NULL, thm=c("w", "b")) {
     # validity
     thm <- match.arg(thm)
     fov_id <- .fov_id(dat)
-    if (is.null(dat_id)) 
-        dat_id <- .obs_id(dat, "dat_id")
-    # molecules
-    ms <- if (!is.null(mol)) {
-        ms <- .pq(mol, "mol")
-        if (is.null(mol_id)) mol_id <- .obs_id(ms, "mol_id")
-        if (is.null(mol_key)) mol_key <- .mol_key(ms)
-        ms <- ms |>
-            filter(!!sym(mol_id) %in% dat[[dat_id]]) |>
-            mutate(key=paste(!!sym(mol_key))) |>
-            filter(key %in% keys)
-        ms <- as.data.frame(ms)
-        as <- list(
-            data=ms, inherit.aes=FALSE,
-            mapping=aes(col=.data$key, 
-                x_location, y_location))
-        if (is.null(mol_pal)) 
-            mol_pal <- unname(pals::trubetskoy())
-        list(
-            do.call(geom_point, c(as, mol_aes)),
-            scale_color_manual(NULL, values=mol_pal),
-            guides(col=guide_legend(override.aes=list(size=2))))
-    }
-    # polygon
+    if (is.null(dat_id)) dat_id <- .id(dat, "dat_id")
+    if (is.null(na)) na <- switch(thm, b="grey20", w="grey80")
+    # polygons
     ps <- if (!is.null(pol)) {
         ps <- .pq(pol, "pol")
         if (is.null(pol_id)) 
-            pol_id <- .obs_id(ps, "pol_id")
+            pol_id <- .id(ps, "pol_id")
         cs <- pull(ps, pol_id, as_vector=TRUE)
         if (!is.null(fov_id)) {
             dat$fxc <- paste(dat[[fov_id]], dat[[dat_id]], sep=";")
@@ -127,68 +130,108 @@ setMethod("miro", "data.frame", \(dat, dat_id=NULL,
         j <- setdiff(names(dat), names(ps))
         df <- cbind(ps, dat[i, j])
         # aesthetics
-        if (is.null(f)) f <- switch(thm, b="white", w="black")
+        if (is.null(f)) f <- switch(thm, b="grey80", w="grey20")
         if (is.null(c)) c <- switch(thm, b="black", w="white")
-        if (is.null(na)) na <- switch(thm, b="grey20", w="grey80")
-        if (is.character(f)) {
-            if (.is_col(f)) {
-                df[[f]] <- f
-                pal <- scale_fill_identity(guide="none")
-            } else stopifnot(f %in% names(df))
-        }
-        if (scale_type(df[[f]]) == "continuous") {
-            df[[f]] <- .t(df[[f]], t)
-            if (is.null(pol_pal)) pol_pal <- .pal_con
-            aes <- list(theme(
-                legend.key.height=unit(0.8, "lines"),
-                legend.key.width=unit(0.4, "lines")),
-                guides(fill=guide_colorbar(order=1)),
-                scale_fill_gradientn(colors=pol_pal, na.value=na))
-        } else {
-            pal <- if (is.logical(df[[f]])) {
-                if (is.null(pol_pal)) pol_pal <- .pal_log[[thm]]
-                scale_fill_manual(values=pol_pal, na.value=na, guide="none") 
-            } else {
-                if (is.null(pol_pal)) pol_pal <- .pal_dis
-                scale_fill_manual(values=pol_pal, na.value=na)
-            }
-            aes <- list(pal, theme(
-                legend.key.size=unit(0.6, "lines")),
-                guides(fill=guide_legend(order=1, override.aes=list(alpha=1))))
+        if (.is_col(f)) {
+            lys <- list()
+            pol_aes$fill <- f
+        } else if (is.character(f)) {
+            stopifnot(f %in% names(df))
+            lys <- .aes(df, f, t, thm, pol_pal, na, typ="f")
         }
         # highlighting
         if (!is.null(hl)) {
-            if (is.character(hl)) {
-                if (length(hl) == 1) {
-                    df[[f]][!df[[hl]][i]] <- NA
-                } else {
-                    stopifnot(hl %in% dat$cell_id)
-                    df[[f]][!df$cell_id %in% hl] <- NA
-                }
-            } else {
-                stopifnot(is.logical(hl), length(hl) == nrow(dat))
+            if (is.logical(hl)) {
+                stopifnot(length(hl) == nrow(dat))
                 df[[f]][!hl[i]] <- NA
-            }
+            } else if (is.character(hl)) {
+                if (length(hl) == 1) {
+                    stopifnot(hl %in% names(df))
+                    df[[f]][!df[[hl]]] <- NA
+                } else {
+                    stopifnot(hl %in% df[[pol_id]])
+                    df[[f]][!df[[pol_id]] %in% hl] <- NA
+                }
+            } else stop("invalid 'hl'; see '?miro'")
         }
         if (is.null(pol_xy)) pol_xy <- .pol_xy(df)
-        as <- list(
-            data=df, inherit.aes=FALSE,
-            mapping=aes(
-                .data[[pol_xy[1]]], .data[[pol_xy[2]]], 
-                fill=.data[[f]], group=.data[[pol_id]]))
-        list(do.call(geom_polygon, c(as, pol_aes)), aes)
+        if (!any("col", "color", "colour") %in% names(pol_aes)) pol_aes$col <- c
+        map <- aes(
+            x=.data[[pol_xy[1]]], 
+            y=.data[[pol_xy[2]]], 
+            group=.data[[pol_id]])
+        if (is.null(pol_aes$fill)) 
+            map$fill <- aes(.data[[f]])[[1]]
+        args <- list(data=df, mapping=map, inherit.aes=FALSE)
+        list(do.call(geom_polygon, c(args, pol_aes)), lys)
+    }
+    # molecules
+    ms <- if (!is.null(mol)) {
+        vars <- as.list(environment())
+        args <- intersect(names(formals(.mol)), names(vars))
+        do.call(.mol, vars[args])
+    }
+    # centroids
+    cs <- if (xy || is.null(pol) && is.null(mol)) {
+        map <- aes(
+            x=.data[[dat_xy[1]]],
+            y=.data[[dat_xy[2]]])
+        col <- c("col", "color", "colour")
+        chk <- col %in% names(dat_aes)
+        if (any(chk)) {
+            c <- dat_aes[[which(chk)]]
+            map$colour <- aes(.data[[c]])[[1]]
+            dat_aes[[col[chk]]] <- NULL
+        }
+        args <- list(mapping=map, data=dat)
+        geo <- do.call(geom_point, c(args, dat_aes))
+        lys <- .aes(dat, c, t, thm, dat_pal, na, typ="c")
+        c(list(geo), lys)
     }
     # plotting
-    ggplot() + .thm(thm) + ps + ms
+    ggplot() + .thm(thm) + ps + ms + cs
 })
 
+.aes <- \(df, i, t, thm, pal, na, typ=c("f", "c")) {
+    typ <- match.arg(typ)
+    scale <- switch(typ, f="fill", c="color")
+    if (scale_type(df[[i]]) == "continuous") {
+        df[[i]] <- .t(df[[i]], t)
+        if (is.null(pal)) pal <- .pal_con
+        scale <- get(paste0("scale_", scale, "_gradientn"))
+        scale <- do.call(scale, list(colors=pal, na.value=na))
+        guide <- switch(typ, 
+            f=guides(fill=guide_colorbar(order=1)),
+            c=guides(col=guide_colorbar(order=1)))
+        lys <- list(scale, guide, theme(
+            legend.key.height=unit(0.8, "lines"),
+            legend.key.width=unit(0.4, "lines")))
+    } else {
+        if (is.logical(df[[i]])) {
+            if (is.null(pal)) pal <- .pal_log[[thm]]
+            guide <- "none"
+        } else {
+            if (is.null(pal)) pal <- .pal_dis
+            guide <- switch(typ, 
+                f=guides(fill=guide_legend(order=1)),
+                c=guides(col=guide_legend(order=1)))
+        }
+        scale <- get(paste0("scale_", scale, "_manual"))
+        scale <- do.call(scale, list(values=pal, na.value=na, guide=guide))
+        lys <- list(scale, guide, theme(legend.key.size=unit(0.6, "lines")))
+    }
+    return(lys)
+}
+
+# uts ----
+#' @importFrom arrow read_parquet
 .pq <- \(x, y) {
     if (!isTRUE(grepl("\\.parquet$", x)))
         stop("'", y, "' should point to a .parquet")
     read_parquet(x, as_data_frame=FALSE)
 } 
 
-.obs_id <- \(x, y) {
+.id <- \(x, y) {
     id <- c("cell_id", "cell_ID", "cellID")
     chk <- id %in% names(x)
     if (!any(chk)) stop("couldn't guess '", y, "'; please specify")
@@ -200,6 +243,53 @@ setMethod("miro", "data.frame", \(dat, dat_id=NULL,
     if (length(x)) return(x)
 }
 
+# mol ----
+
+#' @importFrom dplyr filter mutate
+.mol <- \(
+    dat, dat_id=NULL, 
+    mol, mol_id=NULL, 
+    mol_xy=NULL, 
+    mol_pal=NULL, mol_aes=NULL, 
+    mol_key=NULL, keys=NULL)
+{
+    .data <- NULL # R CMD check
+    ms <- .pq(mol, "mol")
+    if (is.null(mol_id)) mol_id <- .id(ms, "mol_id")
+    if (is.null(mol_xy)) mol_xy <- .mol_xy(ms)
+    if (is.null(mol_key)) mol_key <- .mol_key(ms)
+    ms <- ms |>
+        filter(!!sym(mol_id) %in% dat[[dat_id]]) |>
+        mutate(key=paste(!!sym(mol_key))) |>
+        filter(key %in% keys)
+    ms <- as.data.frame(ms)
+    ms[[mol_key]] <- factor(ms[[mol_key]], keys)
+    if (is.null(mol_pal)) mol_pal <- .pal_dis
+    args <- list(
+        data=ms, inherit.aes=FALSE,
+        mapping=aes(col=.data$key, 
+            x=.data[[mol_xy[1]]], 
+            y=.data[[mol_xy[2]]]))
+    list(do.call(geom_point, c(args, mol_aes)),
+        theme(legend.key.size=unit(0, "lines")),
+        scale_color_manual(NULL, values=mol_pal),
+        guides(col=guide_legend(override.aes=list(alpha=1, size=2))))
+}
+.mol_xy <- \(x) {
+    xy <- list(
+        c("x_location", "y_location")) # Xenium
+    chk <- vapply(xy, \(.) all(. %in% names(x)), logical(1))
+    if (!any(chk)) stop("couldn't guess 'pol_id'; please specify")
+    return(xy[[which(chk)]])
+}
+.mol_key <- \(x) {
+    id <- c("feature_name")
+    chk <- id %in% names(x)
+    if (!any(chk)) stop("couldn't guess 'mol_key'; please specify")
+    return(id[chk])
+}
+
+# pol ----
 .pol_xy <- \(x) {
     xy <- list(
         c("vertex_x", "vertex_y"), # Xenium
@@ -207,11 +297,4 @@ setMethod("miro", "data.frame", \(dat, dat_id=NULL,
     chk <- vapply(xy, \(.) all(. %in% names(x)), logical(1))
     if (!any(chk)) stop("couldn't guess 'pol_id'; please specify")
     return(xy[[which(chk)]])
-}
-
-.mol_key <- \(x) {
-    id <- c("feature_name")
-    chk <- id %in% names(x)
-    if (!any(chk)) stop("couldn't guess 'mol_key'; please specify")
-    return(id[chk])
 }

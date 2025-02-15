@@ -56,6 +56,7 @@
 # check whether character string 
 # is a valid color specification
 .is_col <- \(.) {
+    if (is.null(.)) return(FALSE)
     . <- try(col2rgb(.), silent=TRUE)
     return(!inherits(., "try-error"))
 }
