@@ -125,7 +125,7 @@ setMethod("miro", "SingleCellExperiment",
             as <- assay(dat[fc, ], assay)
             df <- cbind(df, t(as.matrix(as)))
         }
-        miro(dat=df, pol=ps, mol=ms, ...)
+        miro(dat=df, pol=ps, mol=ms, sub=NULL, ...)
     })
 
 #' @importFrom SummarizedExperiment assay colData
