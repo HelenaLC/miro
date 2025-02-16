@@ -293,22 +293,9 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     } else if (is.character(f)) {
         pol_aes$fill <- NULL
         stopifnot(f %in% names(df))
+        dat <- .hl(hl, dat, f)
+        df[[f]] <- dat[[f]][i]
         lys <- .aes(df, f, thm, pol_pal, na, typ="f")
-    }
-    # highlighting
-    if (!is.null(hl)) {
-        if (is.logical(hl)) {
-            stopifnot(length(hl) == nrow(dat))
-            df[[f]][!hl[i]] <- NA
-        } else if (is.character(hl)) {
-            if (length(hl) == 1) {
-                stopifnot(hl %in% names(df))
-                df[[f]][!df[[hl]]] <- NA
-            } else {
-                stopifnot(hl %in% df[[pol_id]])
-                df[[f]][!df[[pol_id]] %in% hl] <- NA
-            }
-        } else stop("invalid 'hl'; see '?miro'")
     }
     if (is.null(pol_xy)) pol_xy <- .pol_xy(df)
     map <- aes(
