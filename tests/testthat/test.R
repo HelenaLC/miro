@@ -6,7 +6,9 @@ spe <- xen()
 mol <- "transcripts"
 pol <- "cell_boundaries"
 
-test_that("SpatialExperiment", {
+# dispatch ----
+
+test_that("SPE", {
     expect_silent(x <- miro(spe))
     expect_s3_class(x, "ggplot")
     expect_length(x$layers, 1)
@@ -21,7 +23,7 @@ test_that("SCE", {
     expect_length(x$layers, 1)
 })
 
-test_that("data.frame", {
+test_that("df", {
     xy <- spatialCoords(spe)
     df <- data.frame(colData(spe), xy)
     x <- miro(df, dat_xy=colnames(xy))
@@ -31,7 +33,7 @@ test_that("data.frame", {
 
 # pol ----
 
-test_that("polygons", {
+test_that("pol", {
     # simple
     x <- miro(spe, pol=pol)
     expect_s3_class(x, "ggplot")
@@ -54,7 +56,7 @@ test_that("polygons", {
 
 # mol ----
 
-test_that("molecules", {
+test_that("mol", {
     i <- sample(rownames(spe), 1)
     x <- miro(spe, mol=mol, keys=i)
     expect_s3_class(x, "ggplot")
@@ -84,21 +86,19 @@ test_that("assay", {
 
 test_that("dat_t", {
     spe$x <- runif(ncol(spe))
+    .x <- \(p) p$layers[[1]]$data$x
+    # identity
     p <- miro(spe, dat_aes=list(col="x"), dat_t="n")
-    x <- p$layers[[1]]$data$x
-    expect_identical(x, spe$x)
-
+    expect_identical(.x(p), spe$x)
+    # quantile scaling
     p <- miro(spe, dat_aes=list(col="x"), dat_t="q")
-    x <- p$layers[[1]]$data$x
-    expect_equal(range(x), c(0, 1))
-
+    expect_equal(range(.x(p)), c(0, 1))
+    # z-normalization
     p <- miro(spe, dat_aes=list(col="x"), dat_t="z")
-    x <- p$layers[[1]]$data$x
-    expect_equal(mean(x), 0)
-    expect_equal(sd(x), 1)
-
+    expect_equal(mean(.x(p)), 0)
+    expect_equal(sd(.x(p)), 1)
+    # custom function
     p <- miro(spe, dat_aes=list(col="x"), dat_t=log)
-    x <- p$layers[[1]]$data$x
-    expect_identical(x, log(spe$x))
+    expect_identical(.x(p), log(spe$x))
 })
     
