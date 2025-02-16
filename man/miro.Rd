@@ -31,8 +31,6 @@
   mol_key = NULL,
   keys = NULL,
   fov_id = NULL,
-  fov_lab = FALSE,
-  fov_box = FALSE,
   dat_t = c("n", "q", "z"),
   hl = NULL,
   na = NULL,
@@ -46,11 +44,35 @@
 
 \item{...}{optional arguments passed between methods}
 
-\item{pol_xy, mol_xy}{character vector; spatial coordinates}
+\item{assay}{scalar integer or character string;
+specifies which `assay` data to use when coloring by
+feature names; ignored when `dat` is a `data.frame`}
 
-\item{pol_id, mol_id}{character string; observation identifiers}
+\item{xy}{logical scalar; should centroids be rendered?
+by default, they are hidden when `pol/mol` aren't NULL}
+
+\item{dat_xy, pol_xy, mol_xy}{character vector; spatial coordinates}
+
+\item{dat_id, pol_id, mol_id}{character string; observation identifiers}
+
+\item{dat_pal, pol_pal, mol_pal}{character vector; 
+palette to use for centroids/polygons/molecules}
+
+\item{dat_aes, pol_aes, mol_aes}{list; 
+aesthetics for rendering centroids/polygons/molecules;
+passed to `geom_point` for centroids/molecules, 
+and `geom_polygon` for polygons}
 
 \item{mol_key}{character string; feature identifier}
+
+\item{keys}{character vectors; specifies which 
+features molecules should be rendered for}
+
+\item{fov_id}{character string; field of view identifier}
+
+\item{dat_t}{character string or function; 
+specifies whether/how to transform values being 
+colored by; `n`one, `z`-scale, or `q`uantile scale}
 
 \item{hl}{specifies observation to highlight;
 either a logical or character vector, or a character string
@@ -61,9 +83,6 @@ fill of non-highlighted observations will be set to NA}
 
 \item{thm}{character string; visualize using
 either `"b"`lack or `"w"`hite base theme}
-
-\item{t}{character string or function; specifies whether/how to 
-transform fill values; `n`one, `z`-scale, or `q`uantile scale}
 }
 \value{
 `ggplot`
@@ -72,30 +91,23 @@ transform fill values; `n`one, `z`-scale, or `q`uantile scale}
 spatial (transcript)omics visualization
 }
 \examples{
-library(OSTA.data)
-id <- "Xenium_HumanColon_Oliveria"
-pa <- OSTA.data_load(id)
-dir.create(td <- tempfile())
-unzip(pa, exdir=td)
-
-library(SpatialExperiment)
-library(SpatialExperimentIO)
-spe <- readXeniumSXE(td)
-
-xy <- spatialCoords(spe)
-spe <- spe[, 
-  xy[,1]>1500 & xy[,1]<2000 & 
-  xy[,2]<1700 & xy[,2]>1200 ]
-    
+spe <- miro::xen()
+m <- "transcripts"  
 p <- "cell_boundaries"
-m <- "transcripts"   
- 
-miro(spe, pol=p, f="cell_area") 
- 
-miro(spe, pol=p, mol=m, 
-  pol=p, pol_aes=list(size=0.1),
-  mol=m, mol_aes=list(size=0.1),
-  keys=c("VWF", "EGFR", "PECAM1"),
-  mol_pal=c("gold", "cyan", "magenta"))
+
+# centroids
+miro(spe, dat_aes=list(size=0.2, col="total_counts"), dat_t=log10)
+  
+# polygons
+miro(spe, pol=p, pol_aes=list(fill="cell_area"))
+
+# polygons + centroids
+miro(spe[, 400:600], pol=p, xy=TRUE, 
+  dat_aes=list(col="white", size=1))
+
+# molecules  
+miro(spe, mol=m, mol_aes=list(size=0.4),
+  keys=c("MYC", "FABP1", "CEACAM5", "GPX2", "CD24"), 
+  mol_pal=c("blue", "cyan", "magenta", "black", "gold"))
 
 }

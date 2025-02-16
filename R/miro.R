@@ -3,11 +3,17 @@
 #'
 #' @param dat ...
 #' @param pol,mol character string; polygons/molecules .parquet
-#' @param pol_xy,mol_xy character vector; spatial coordinates
-#' @param pol_id,mol_id character string; observation identifiers
+#' @param dat_xy,pol_xy,mol_xy character vector; spatial coordinates
+#' @param dat_id,pol_id,mol_id character string; observation identifiers
+#' @param fov_id character string; field of view identifier
 #' @param mol_key character string; feature identifier
-#' @param t character string or function; specifies whether/how to 
-#'   transform fill values; `n`one, `z`-scale, or `q`uantile scale
+#' @param keys character vectors; specifies which 
+#'   features molecules should be rendered for
+#' @param dat_t character string or function; 
+#'   specifies whether/how to transform values being 
+#'   colored by; `n`one, `z`-scale, or `q`uantile scale
+#' @param xy logical scalar; should centroids be rendered?
+#'   by default, they are hidden when `pol/mol` aren't NULL
 #' @param hl specifies observation to highlight;
 #'   either a logical or character vector, or a character string
 #'   specifying a logical `colData` slot or `data.frame` column;
@@ -15,36 +21,38 @@
 #' @param na character string; color to use for NA values
 #' @param thm character string; visualize using
 #'   either `"b"`lack or `"w"`hite base theme
+#' @param assay scalar integer or character string;
+#'   specifies which `assay` data to use when coloring by
+#'   feature names; ignored when `dat` is a `data.frame`
+#' @param dat_aes,pol_aes,mol_aes list; 
+#'   aesthetics for rendering centroids/polygons/molecules;
+#'   passed to `geom_point` for centroids/molecules, 
+#'   and `geom_polygon` for polygons
+#' @param dat_pal,pol_pal,mol_pal character vector; 
+#'   palette to use for centroids/polygons/molecules
 #' @param ... optional arguments passed between methods
 #'
 #' @return `ggplot`
 #'
 #' @examples
-#' library(OSTA.data)
-#' id <- "Xenium_HumanColon_Oliveria"
-#' pa <- OSTA.data_load(id)
-#' dir.create(td <- tempfile())
-#' unzip(pa, exdir=td)
-#' 
-#' library(SpatialExperiment)
-#' library(SpatialExperimentIO)
-#' spe <- readXeniumSXE(td)
-#' 
-#' xy <- spatialCoords(spe)
-#' spe <- spe[, 
-#'   xy[,1]>1500 & xy[,1]<2000 & 
-#'   xy[,2]<1700 & xy[,2]>1200 ]
-#'     
+#' spe <- miro::xen()
+#' m <- "transcripts"  
 #' p <- "cell_boundaries"
-#' m <- "transcripts"   
-#'  
-#' miro(spe, pol=p, f="cell_area") 
-#'  
-#' miro(spe, pol=p, mol=m, 
-#'   pol=p, pol_aes=list(size=0.1),
-#'   mol=m, mol_aes=list(size=0.1),
-#'   keys=c("VWF", "EGFR", "PECAM1"),
-#'   mol_pal=c("gold", "cyan", "magenta"))
+#' 
+#' # centroids
+#' miro(spe, dat_aes=list(size=0.2, col="total_counts"), dat_t=log10)
+#'   
+#' # polygons
+#' miro(spe, pol=p, pol_aes=list(fill="cell_area"))
+#' 
+#' # polygons + centroids
+#' miro(spe[, 400:600], pol=p, xy=TRUE, 
+#'   dat_aes=list(col="white", size=1))
+#' 
+#' # molecules  
+#' miro(spe, mol=m, mol_aes=list(size=0.4),
+#'   keys=c("MYC", "FABP1", "CEACAM5", "GPX2", "CD24"), 
+#'   mol_pal=c("blue", "cyan", "magenta", "black", "gold"))
 #' 
 #' @import ggplot2
 NULL
@@ -82,10 +90,9 @@ setMethod("miro", "SingleCellExperiment",
         pol_aes <- list(...)$pol_aes
         df <- data.frame(colData(dat), check.names=FALSE)
         if (!is.null(f <- pol_aes$fill) && all(f %in% rownames(dat))) {
-            stopfinot(is.character(assay), length(assay) == 1)
+            stopifnot(is.character(assay), length(assay) == 1)
             na <- is.na(match(assayNames(dat), assay))
             if (all(na)) stop("'dat' has no ", dQuote(assay), " assay")
-            if (sum(na) > 1) stop("'dat' has multiple ", dQuote(assay), " assays")
             df[[f]] <- assay(dat, assay)[f, ]
         }
         miro(dat=df, pol=ps, mol=ms, ...)
@@ -104,7 +111,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     # molecules
     mol_xy=NULL, mol_id=NULL, mol_pal=NULL, mol_aes=list(), 
     mol_key=NULL, keys=NULL,
-    fov_id=NULL, fov_lab=FALSE, fov_box=FALSE, # TODO
+    fov_id=NULL, # TODO fov_lab=FALSE, fov_box=FALSE, 
     dat_t=c("n", "q", "z"), 
     hl=NULL, na=NULL, thm=c("w", "b")) {
     # validity
@@ -133,9 +140,11 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
         chk <- col %in% names(dat_aes)
         if (any(chk)) {
             c <- dat_aes[[col[chk]]]
-            dat[[c]] <- .t(dat[[c]], dat_t)
-            map$colour <- aes(.data[[c]])[[1]]
-            dat_aes <- dat_aes[!names(dat_aes) %in% col]
+            if (!.is_col(c)) {
+                dat[[c]] <- .t(dat[[c]], dat_t)
+                map$colour <- aes(.data[[c]])[[1]]
+                dat_aes <- dat_aes[!names(dat_aes) %in% col]
+            }
         } else c <- switch(thm, w="black", b="white")
         args <- list(mapping=map, data=dat)
         geo <- do.call(geom_point, c(args, dat_aes))
@@ -273,7 +282,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     mol_pal=NULL, mol_aes=NULL, 
     mol_key=NULL, keys=NULL)
 {
-    .data <- NULL # R CMD check
+    .data <- key <- NULL # R CMD check
     ms <- .pq(mol, "mol")
     if (is.null(mol_id)) mol_id <- .id(ms, "mol_id")
     if (is.null(mol_xy)) mol_xy <- .mol_xy(ms)

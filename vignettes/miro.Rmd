@@ -67,6 +67,12 @@ miro(sub1, mol=m, keys=c("DUOX2", "MUC12", "VWF"), mol_aes=list(size=0))
 
 # Layering
 
+```{r fig.width=3, fig.height=3}
+miro(sub2, 
+    pol=p, pol_aes=list(fill="darkgreen"),
+    xy=TRUE, dat_aes=list(col="green", size=0.2))
+```
+
 ```{r fig.height=4, fig.width=4.5}
 miro(sub2, 
     pol=p, pol_aes=list(fill=NA, col="black", size=0.1),

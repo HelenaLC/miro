@@ -15,19 +15,12 @@
 }
 
 # upper/lower quantile scaling
+#' @importFrom stats quantile
 .q <- \(x, d=1, q=0.01) {
     if (length(q) == 1)
         q <- c(q, 1-q)
-    if (!is.matrix(x)) {
-        qs <- quantile(x, q, na.rm=TRUE)
-        x <- (x-qs[1])/diff(qs)
-    } else {
-        qs <- c(rowQuantiles, colQuantiles)[[d]]
-        qs <- matrix(qs(x, probs=q), ncol=2)
-        x <- switch(d, 
-            `1`=(x-qs[, 1])/(qs[, 2]-qs[, 1]), 
-            `2`=t((t(x)-qs[, 1])/(qs[, 2]-qs[, 1])))
-    }
+    qs <- quantile(x, q, na.rm=TRUE)
+    x <- (x-qs[1])/diff(qs)
     x[x < 0] <- 0
     x[x > 1] <- 1
     return(x)
@@ -35,17 +28,10 @@
 
 # thresholded z-scaling
 .z <- \(x, th=2.5) {
-    if (is.null(dim(x))) {
-        x[x < 0] <- 0
-        sd <- sd(x, na.rm=TRUE)
-        x <- x-mean(x, na.rm=TRUE)
-        if (sd != 0) x <- x/sd
-    } else {
-        mus <- colMeans(x, na.rm=TRUE)
-        sds <- colSds(x, na.rm=TRUE)
-        x <- sweep(x, 2, mus, `-`)
-        x <- sweep(x, 2, sds, `/`)
-    }
+    x[x < 0] <- 0
+    sd <- sd(x, na.rm=TRUE)
+    x <- x-mean(x, na.rm=TRUE)
+    if (sd != 0) x <- x/sd
     x[x > +th] <- +th
     x[x < -th] <- -th
     return(x)
@@ -55,6 +41,7 @@
 
 # check whether character string 
 # is a valid color specification
+#' @importFrom grDevices col2rgb
 .is_col <- \(.) {
     if (is.null(.)) return(FALSE)
     . <- try(col2rgb(.), silent=TRUE)

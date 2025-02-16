@@ -51,15 +51,12 @@ i <- sample(nrow(tx), 1e4)
 tx <- tx[i, ]
 
 # saving
-xen <- sub
 pq <- "transcripts.parquet"
 pq <- file.path(ed, pq)
 write_parquet(tx, pq)
-metadata(xen)[[t]] <- file.path("..", pq)
 for (p in names(ps)) {
     pq <- paste0(p, ".parquet")
     pq <- file.path(ed, pq)
     write_parquet(ps[[p]], pq)
-    metadata(xen)[[p]] <- file.path("..", pq)
 }
-use_data(xen, overwrite=TRUE)
+saveRDS(sub, file.path(ed, "spe.rds"))

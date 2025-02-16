@@ -1,5 +1,4 @@
 Package: miro
-Type: Software
 Version: 0.99.0
 Depends: R (>= 4.4)
 Title: Visuals for Spatial (Transcript)Omics
@@ -15,16 +14,25 @@ Imports:
     ggplot2,
     methods,
     pals,
-    patchwork,
     S4Vectors,
     SpatialExperiment,
     SummarizedExperiment
 Suggests: 
     knitr,
     BiocStyle,
+    OSTA.data,
+    SpatialExperimentIO,
     testthat (>= 3.0.0)
+biocViews:
+    Spatial,
+    Visualization,
+    Transcription,
+    GeneExpression
 License: GPL-3
 Encoding: UTF-8
 RoxygenNote: 7.3.2
+VignetteBuilder: knitr
 Config/testthat/edition: 3
+URL: https://github.com/HelenaLC/miro
+BugReports: https://github.com/HelenaLC/miro/issues
 LazyData: true
