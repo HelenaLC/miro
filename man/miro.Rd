@@ -5,7 +5,7 @@
 \alias{miro,SpatialExperiment-method}
 \alias{miro,SingleCellExperiment-method}
 \alias{miro,data.frame-method}
-\title{spatial (transcript)omics visualization}
+\title{Visuals for Spatial (Transcript)Omics}
 \usage{
 \S4method{miro}{SpatialExperiment}(dat, pol = NULL, mol = NULL, ...)
 
@@ -88,7 +88,18 @@ either `"b"`lack or `"w"`hite base theme}
 `ggplot`
 }
 \description{
-spatial (transcript)omics visualization
+`miro` provides a one-line command to visualize multi-layered data from
+a .parquet-backed `Spatial-`, `SingleCellExperiment`, or `data.frame`.
+
+To achieve this, data needs to be matched between objects with potentially 
+different dimension names (e.g., spatial coordinates, cell identifiers). 
+
+To try and avoid cumbersome passing of many arguments, `miro` tries to guess 
+these from a catalog of values encountered across commercial platforms such 
+as CosMx (NanoString) and Xenium (10x Genomics).
+
+In addition, each layer is associated with a designed set of aesthetics, 
+(e.g., color mapping, size etc.) allowing for highly flexible visualization.
 }
 \examples{
 spe <- miro::xen()
