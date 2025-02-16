@@ -36,41 +36,30 @@ unzip(pa, exdir=td)
 (spe <- readXeniumSXE(td))
 # crop for demo
 xy <- spatialCoords(spe)
-spe <- spe[, 
-    xy[,1]>1500 & xy[,1]<2000 & 
-    xy[,2]<1700 & xy[,2]>1200 ]
+sub <- spe[, 
+    xy[,1]>1000 & xy[,1]<2000 & 
+    xy[,2]<2000 & xy[,2]>1500 ]
+colRanges(spatialCoords(sub))
 ```
 
 # Centroids
 
-```{r}
-devtools::load_all()
-miro(spe, 
-    xy=TRUE,
-    pol=p,
-    pol_aes=list(size=0.1),
-    dat_aes=list(col="cell_area", size=0.2))
+```{r fig.width=4, fig.height=3.5}
+miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), dat_t=log10)
 ```
 
 # Polygons
 
 ```{r}
-devtools::load_all()
 p <- "cell_boundaries"
-m <- "transcripts"
-miro(spe, pol=p, f="cell_area")
+miro(sub, pol=p, pol_aes=list(fill="cell_area"))
 ```
 
 # Molecules
 
 ```{r fig.height=3.5, fig.width=4}
-miro(spe, 
-    dat_aes=list(size=0.2),
-    f="red", #c="black",
-    #pol=p, pol_aes=list(size=0.1),
-    # mol=m, mol_aes=list(size=0.1),
-    # keys=c("VWF", "EGFR", "PECAM1"),
-    mol_pal=c("gold", "cyan", "magenta"))
+m <- "transcripts"
+miro(sub, mol=m, keys="CXCL5")
 ```
 
 # Layering

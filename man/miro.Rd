@@ -9,21 +9,21 @@
 \usage{
 \S4method{miro}{SpatialExperiment}(dat, pol = NULL, mol = NULL, ...)
 
-\S4method{miro}{SingleCellExperiment}(dat, pol = NULL, mol = NULL, f = NULL, assay = "logcounts", ...)
+\S4method{miro}{SingleCellExperiment}(dat, pol = NULL, mol = NULL, assay = "logcounts", ...)
 
 \S4method{miro}{data.frame}(
   dat,
+  pol = NULL,
+  mol = NULL,
   xy = FALSE,
   dat_xy = NULL,
   dat_id = NULL,
   dat_pal = NULL,
   dat_aes = list(),
-  pol = NULL,
   pol_xy = NULL,
   pol_id = NULL,
   pol_pal = NULL,
   pol_aes = list(),
-  mol = NULL,
   mol_xy = NULL,
   mol_id = NULL,
   mol_pal = NULL,
@@ -33,10 +33,7 @@
   fov_id = NULL,
   fov_lab = FALSE,
   fov_box = FALSE,
-  f = NULL,
-  c = NULL,
-  s = 0.1,
-  t = c("n", "q", "z"),
+  dat_t = c("n", "q", "z"),
   hl = NULL,
   na = NULL,
   thm = c("w", "b")
@@ -55,9 +52,6 @@
 
 \item{mol_key}{character string; feature identifier}
 
-\item{t}{character string or function; specifies whether/how to 
-transform fill values; `n`one, `z`-scale, or `q`uantile scale}
-
 \item{hl}{specifies observation to highlight;
 either a logical or character vector, or a character string
 specifying a logical `colData` slot or `data.frame` column;
@@ -67,6 +61,9 @@ fill of non-highlighted observations will be set to NA}
 
 \item{thm}{character string; visualize using
 either `"b"`lack or `"w"`hite base theme}
+
+\item{t}{character string or function; specifies whether/how to 
+transform fill values; `n`one, `z`-scale, or `q`uantile scale}
 }
 \value{
 `ggplot`
