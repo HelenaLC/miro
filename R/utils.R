@@ -55,21 +55,6 @@
 .pal_dis <- unname(trubetskoy())
 .pal_log <- list(b=c("navy", "cyan"), w=c("lavender", "purple"))
 
-# aes ----
-
-# prettified plot title in the style of
-# 'title (N = count)' with bold 'title'
-.lab <- \(x, n=NULL) {
-    if (is.null(n)) {
-        if (is.null(x)) "" else # blank
-            bquote(bold(.(x)))  # 'x' only
-    } else {
-        n <- format(n, big.mark=",")
-        if (is.null(x)) bquote("N ="~.(n)) else # 'n' only
-            bquote(bold(.(x))~"(N ="~.(n)*")")  # both
-    }
-}
-
 # thm ----
 
 # base theme for spatial plots

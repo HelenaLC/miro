@@ -3,6 +3,8 @@ suppressPackageStartupMessages({
     library(SpatialExperimentIO)
 })
 spe <- xen()
+mol <- "transcripts"
+pol <- "cell_boundaries"
 
 test_that("SpatialExperiment", {
     expect_silent(x <- miro(spe))
@@ -29,7 +31,40 @@ test_that("data.frame", {
 
 # pol ----
 
-# test_that("polygons", {
-#     p <- "cell_boundaries"
-#     miro(spe, pol=p)
-# })
+test_that("polygons", {
+    x <- miro(spe, pol=pol)
+    expect_s3_class(x, "ggplot")
+    expect_length(x$layers, 1)
+})
+
+# mol ----
+
+test_that("molecules", {
+    i <- sample(rownames(spe), 1)
+    x <- miro(spe, mol=mol, keys=i)
+    expect_s3_class(x, "ggplot")
+    expect_length(x$layers, 1)
+})
+
+# uts ----
+
+test_that("dat_t", {
+    spe$x <- runif(ncol(spe))
+    p <- miro(spe, dat_aes=list(col="x"), dat_t="n")
+    x <- p$layers[[1]]$data$x
+    expect_identical(x, spe$x)
+
+    p <- miro(spe, dat_aes=list(col="x"), dat_t="q")
+    x <- p$layers[[1]]$data$x
+    expect_equal(range(x), c(0, 1))
+
+    p <- miro(spe, dat_aes=list(col="x"), dat_t="z")
+    x <- p$layers[[1]]$data$x
+    expect_equal(mean(x), 0)
+    expect_equal(sd(x), 1)
+
+    p <- miro(spe, dat_aes=list(col="x"), dat_t=log)
+    x <- p$layers[[1]]$data$x
+    expect_identical(x, log(spe$x))
+})
+    
