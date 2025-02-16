@@ -21,7 +21,7 @@ package: "`r BiocStyle::pkg_ver('miro')`"
 
 ## Dependencies
 
-```{r load-libs}
+```{r load-libs, message=FALSE, warning=FALSE}
 library(miro)
 library(OSTA.data)
 library(SpatialExperiment)
@@ -37,19 +37,15 @@ unzip(pa, exdir=td)
 (spe <- readXeniumSXE(td))
 # crop for demo
 xy <- spatialCoords(spe)
-sub <- spe[, 
+sub1 <- spe[, 
     xy[,1]>1000 & xy[,1]<2000 & 
-    xy[,2]<2500 & xy[,2]>1500 ]
-colRanges(spatialCoords(sub))
+    xy[,2]>1500 & xy[,2]<2500 ]
+sub2 <- spe[, 
+    xy[,1]>1400 & xy[,1]<1600 & 
+    xy[,2]>1800 & xy[,2]<2000 ]
+p <- "cell_boundaries"
+m <- "transcripts"
 ```
-
-```{r}
-sub <- spe[, 
-    xy[,1]>1200 & xy[,1]<2200 & 
-    xy[,2]>1600 & xy[,2]<2200 ]
-miro(sub, pol="cell_boundaries")
-```
-
 
 # Centroids
 
@@ -59,19 +55,25 @@ miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), dat_t=log10)
 
 # Polygons
 
-```{r}
-p <- "cell_boundaries"
-miro(sub, pol=p, pol_aes=list(fill="cell_area"))
+```{r fig.height=4, fig.width=4.5}
+miro(sub1, pol=p, pol_aes=list(fill="cell_area"))
 ```
 
 # Molecules
 
-```{r fig.height=3.5, fig.width=4}
-m <- "transcripts"
-miro(sub, mol=m, keys="CXCL5")
+```{r fig.height=4, fig.width=4.5}
+miro(sub1, mol=m, keys=c("DUOX2", "MUC12", "VWF"), mol_aes=list(size=0))
 ```
 
 # Layering
+
+```{r fig.height=4, fig.width=4.5}
+miro(sub2, 
+    pol=p, pol_aes=list(fill=NA, col="black", size=0.1),
+    mol=m, mol_aes=list(size=0.1), 
+    keys=c("DUOX2", "VWF", "MZB1"),
+    mol_pal=c("magenta", "blue", "gold"))
+```
 
 # Appendix
 
