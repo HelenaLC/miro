@@ -35,14 +35,14 @@ pa <- OSTA.data_load(id)
 dir.create(td <- tempfile())
 unzip(pa, exdir=td)
 (spe <- readXeniumSXE(td))
-# crop for demo
+# crops for demo
 xy <- spatialCoords(spe)
-sub1 <- spe[, 
+spe$roi <- 
     xy[,1]>1000 & xy[,1]<2000 & 
-    xy[,2]>1500 & xy[,2]<2500 ]
-sub2 <- spe[, 
+    xy[,2]>1500 & xy[,2]<2500 
+spe$roj <- 
     xy[,1]>1400 & xy[,1]<1600 & 
-    xy[,2]>1800 & xy[,2]<2000 ]
+    xy[,2]>1800 & xy[,2]<2000 
 p <- "cell_boundaries"
 m <- "transcripts"
 ```
@@ -56,25 +56,25 @@ miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), dat_t=log10)
 # Polygons
 
 ```{r fig.height=4, fig.width=4.5}
-miro(sub1, pol=p, pol_aes=list(fill="cell_area"))
+miro(spe, sub="roi", pol=p, pol_aes=list(fill="cell_area"))
 ```
 
 # Molecules
 
 ```{r fig.height=4, fig.width=4.5}
-miro(sub1, mol=m, keys=c("DUOX2", "MUC12", "VWF"), mol_aes=list(size=0))
+miro(spe, sub="roi", mol=m, keys=c("DUOX2", "MUC12", "VWF"), mol_aes=list(size=0))
 ```
 
 # Layering
 
 ```{r fig.width=3, fig.height=3}
-miro(sub2, 
+miro(spe, sub="roj",
     pol=p, pol_aes=list(fill="darkgreen"),
     xy=TRUE, dat_aes=list(col="green", size=0.2))
 ```
 
 ```{r fig.height=4, fig.width=4.5}
-miro(sub2, 
+miro(spe, sub="roj",
     pol=p, pol_aes=list(fill=NA, col="black", size=0.1),
     mol=m, mol_aes=list(size=0.1), 
     keys=c("DUOX2", "VWF", "MZB1"),

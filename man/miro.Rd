@@ -32,6 +32,7 @@
   keys = NULL,
   fov_id = NULL,
   dat_t = c("n", "q", "z"),
+  sub = NULL,
   hl = NULL,
   na = NULL,
   thm = c("w", "b")
@@ -75,7 +76,7 @@ features molecules should be rendered for}
 specifies whether/how to transform values being 
 colored by; `n`one, `z`-scale, or `q`uantile scale}
 
-\item{hl}{specifies observation to highlight;
+\item{sub, hl}{observations to subset/highlight;
 either a logical or character vector, or a character string
 specifying a logical `colData` slot or `data.frame` column;
 fill of non-highlighted observations will be set to NA}

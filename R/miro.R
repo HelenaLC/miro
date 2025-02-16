@@ -28,7 +28,7 @@
 #'   colored by; `n`one, `z`-scale, or `q`uantile scale
 #' @param xy logical scalar; should centroids be rendered?
 #'   by default, they are hidden when `pol/mol` aren't NULL
-#' @param hl specifies observation to highlight;
+#' @param sub,hl observations to subset/highlight;
 #'   either a logical or character vector, or a character string
 #'   specifying a logical `colData` slot or `data.frame` column;
 #'   fill of non-highlighted observations will be set to NA
@@ -101,12 +101,21 @@ setMethod("miro", "SingleCellExperiment",
             stopifnot(is.character(mol) && length(mol) == 1)
             metadata(dat)[[mol]]
         }
-        # wrangling
+        # subsetting
+        sub <- list(...)$sub
+        if (!is.null(sub)) {
+            if (is.character(sub)) {
+                stopifnot(
+                    length(sub) == 1, 
+                    sub %in% names(colData(dat)))
+                dat <- dat[, dat[[sub]]]
+            } else dat <- dat[, sub]
+        }
+        # aesthetics
         df <- data.frame(colData(dat), check.names=FALSE)
         pol_aes <- list(...)$pol_aes
-        f <- pol_aes$fill
-        
         dat_aes <- list(...)$dat_aes
+        f <- pol_aes$fill
         col <- c("col", "color", "colour")
         if (any(chk <- col %in% names(dat_aes))) 
             c <- dat_aes[[col[chk]]]
@@ -134,7 +143,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     mol_key=NULL, keys=NULL,
     fov_id=NULL, # TODO fov_lab=FALSE, fov_box=FALSE, 
     dat_t=c("n", "q", "z"), 
-    hl=NULL, na=NULL, thm=c("w", "b")) {
+    sub=NULL, hl=NULL, na=NULL, thm=c("w", "b")) {
     # validity
     thm <- match.arg(thm)
     fov_id <- .fov_id(dat)
