@@ -197,7 +197,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
 
 # pol ----
 
-.pol <- \(dat, dat_id=NULL, fov_id=NULL, hl=NULL, na=NULL,
+.pol <- \(dat, dat_id=NULL, fov_id=NULL, hl=NULL, na=NULL, thm=NULL,
     pol, pol_id=NULL, pol_xy=NULL, pol_aes=list(), pol_pal=NULL) {
     ps <- .pq(pol, "pol")
     if (is.null(pol_id)) 

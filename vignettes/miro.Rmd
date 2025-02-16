@@ -22,6 +22,7 @@ package: "`r BiocStyle::pkg_ver('miro')`"
 ## Dependencies
 
 ```{r load-libs}
+library(miro)
 library(OSTA.data)
 library(SpatialExperiment)
 library(SpatialExperimentIO)
@@ -38,9 +39,17 @@ unzip(pa, exdir=td)
 xy <- spatialCoords(spe)
 sub <- spe[, 
     xy[,1]>1000 & xy[,1]<2000 & 
-    xy[,2]<2000 & xy[,2]>1500 ]
+    xy[,2]<2500 & xy[,2]>1500 ]
 colRanges(spatialCoords(sub))
 ```
+
+```{r}
+sub <- spe[, 
+    xy[,1]>1200 & xy[,1]<2200 & 
+    xy[,2]>1600 & xy[,2]<2200 ]
+miro(sub, pol="cell_boundaries")
+```
+
 
 # Centroids
 
