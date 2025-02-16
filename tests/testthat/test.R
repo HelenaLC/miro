@@ -32,9 +32,24 @@ test_that("data.frame", {
 # pol ----
 
 test_that("polygons", {
+    # simple
     x <- miro(spe, pol=pol)
     expect_s3_class(x, "ggplot")
     expect_length(x$layers, 1)
+    # continuous
+    cd <- colData(spe)
+    num <- vapply(cd, is.numeric, logical(1))
+    i <- names(cd)[num][1]
+    x <- miro(spe, pol=pol, pol_aes=list(fill=i))
+    expect_s3_class(x$guides$guides$fill, "GuideColourbar")
+    expect_identical(as_label(x$layers[[1]]$mapping$fill), i)
+    # discrete
+    cd <- colData(spe)
+    str <- vapply(cd, is.character, logical(1))
+    i <- names(cd)[str][1]
+    x <- miro(spe, pol=pol, pol_aes=list(fill=i))
+    expect_s3_class(x$guides$guides$fill, "GuideLegend")
+    expect_identical(as_label(x$layers[[1]]$mapping$fill), i)
 })
 
 # mol ----
