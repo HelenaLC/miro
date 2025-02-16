@@ -35,6 +35,27 @@ test_that("df", {
     expect_length(x$layers, 1)
 })
 
+test_that("sub", {
+    f <- \(p, i) {
+        i <- colnames(spe)[i]
+        df <- p$layers[[1]]$data
+        expect_identical(rownames(.df(p)), i)
+    }
+    n <- sample(seq(100, 200), 1)
+    # integer
+    i <- sample(ncol(spe), n)
+    p <- miro(spe, sub=i)
+    f(p, i)
+    # logical
+    i <- seq_len(ncol(spe)) %in% i
+    p <- miro(spe, sub=i)
+    f(p, i)
+    # 'colData'
+    spe$foo <- i
+    p <- miro(spe, sub="foo")
+    f(p, i)
+})
+
 test_that("dat_t", {
     spe$x <- runif(ncol(spe))
     .x <- \(p) p$layers[[1]]$data$x

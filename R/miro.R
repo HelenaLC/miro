@@ -110,6 +110,7 @@ setMethod("miro", "SingleCellExperiment",
                     sub %in% names(colData(dat)))
                 dat <- dat[, dat[[sub]]]
             } else dat <- dat[, sub]
+            sub <- NULL
         }
         # aesthetics
         df <- data.frame(colData(dat), check.names=FALSE)
@@ -125,7 +126,7 @@ setMethod("miro", "SingleCellExperiment",
             as <- assay(dat[fc, ], assay)
             df <- cbind(df, t(as.matrix(as)))
         }
-        miro(dat=df, pol=ps, mol=ms, sub=NULL, ...)
+        miro(dat=df, pol=ps, mol=ms, ...)
     })
 
 #' @importFrom SummarizedExperiment assay colData
