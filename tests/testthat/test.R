@@ -37,23 +37,21 @@ test_that("df", {
 
 test_that("sub", {
     f <- \(p, i) {
-        i <- colnames(spe)[i]
         df <- p$layers[[1]]$data
-        expect_identical(rownames(.df(p)), i)
+        j <- rownames(.df(p))
+        i <- colnames(spe)[i]
+        expect_identical(i, j)
     }
     n <- sample(seq(100, 200), 1)
     # integer
     i <- sample(ncol(spe), n)
-    p <- miro(spe, sub=i)
-    f(p, i)
+    f(miro(spe, sub=i), i)
     # logical
     i <- seq_len(ncol(spe)) %in% i
-    p <- miro(spe, sub=i)
-    f(p, i)
+    f(miro(spe, sub=i), i)
     # 'colData'
-    spe$foo <- i
-    p <- miro(spe, sub="foo")
-    f(p, i)
+    spe$foo <- i 
+    f(miro(spe, sub="foo"), i)
 })
 
 test_that("dat_t", {

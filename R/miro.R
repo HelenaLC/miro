@@ -126,7 +126,11 @@ setMethod("miro", "SingleCellExperiment",
             as <- assay(dat[fc, ], assay)
             df <- cbind(df, t(as.matrix(as)))
         }
-        miro(dat=df, pol=ps, mol=ms, ...)
+        # make sure to skip 'sub' in next call
+        args <- list(...)
+        args$sub <- NULL
+        args[c("dat", "pol", "mol")] <- list(df, ps, ms)
+        do.call(miro, args)
     })
 
 #' @importFrom SummarizedExperiment assay colData
@@ -148,8 +152,14 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     # validity
     thm <- match.arg(thm)
     fov_id <- .fov_id(dat)
+    stopifnot(!is.null(dat_xy))
     if (is.null(dat_id)) dat_id <- .id(dat, "dat_id")
     if (is.null(na)) na <- switch(thm, b="grey20", w="grey80")
+    # subsetting
+    if (!is.null(sub)) {
+        print(1)
+        dat <- dat[sub, ]
+    }
     # polygons
     ps <- if (!is.null(pol)) {
         vars <- as.list(environment())
@@ -177,6 +187,20 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
                 dat_aes <- dat_aes[!names(dat_aes) %in% col]
             }
         } else c <- switch(thm, w="black", b="white")
+        # highlighting
+        if (!is.null(hl)) {
+            if (is.character(hl)) {
+                stopifnot(length(hl) == 1, !is.null(dat[[hl]]))
+                hl <- dat[[hl]]
+            } else if (is.numeric(hl)) {
+                stopfinot(hl == round(hl), min(hl) > 0, max(hl) < nrow(dat))
+                hl <- seq_len(nrow(dat)) %in% hl
+            } 
+            if (is.logical(hl)) {
+                stopifnot(length(hl) == nrow(dat))
+            } else stop("'hl' invalid; see '?miro'")
+            dat[[c]][!hl] <- NA
+        }
         args <- list(mapping=map, data=dat)
         geo <- do.call(geom_point, c(args, dat_aes))
         lys <- .aes(dat, c, thm, dat_pal, na, typ="c")
