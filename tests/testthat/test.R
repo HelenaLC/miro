@@ -1,12 +1,16 @@
+# deps
 suppressPackageStartupMessages({
+    library(ggplot2)
     library(SpatialExperiment)
     library(SpatialExperimentIO)
 })
+
+# data
 spe <- xen()
 mol <- "transcripts"
 pol <- "cell_boundaries"
 
-# dispatch ----
+# uts ----
 
 test_that("SPE", {
     expect_silent(x <- miro(spe))
@@ -29,6 +33,43 @@ test_that("df", {
     x <- miro(df, dat_xy=colnames(xy))
     expect_s3_class(x, "ggplot")
     expect_length(x$layers, 1)
+})
+
+test_that("dat_t", {
+    spe$x <- runif(ncol(spe))
+    .x <- \(p) p$layers[[1]]$data$x
+    # identity
+    p <- miro(spe, dat_aes=list(col="x"), dat_t="n")
+    expect_identical(.x(p), spe$x)
+    # quantile scaling
+    p <- miro(spe, dat_aes=list(col="x"), dat_t="q")
+    expect_equal(range(.x(p)), c(0, 1))
+    # z-normalization
+    p <- miro(spe, dat_aes=list(col="x"), dat_t="z")
+    expect_equal(mean(.x(p)), 0)
+    expect_equal(sd(.x(p)), 1)
+    # custom function
+    p <- miro(spe, dat_aes=list(col="x"), dat_t=log)
+    expect_identical(.x(p), log(spe$x))
+})
+
+test_that("assay", {
+    # invalid
+    i <- sample(rownames(spe), 1)
+    expect_error(miro(spe, dat_aes=list(col=i), assay="x"))
+    # valid
+    assay(spe, 2) <- assay(spe, 1)/2
+    for (a in c(1, 2)) {
+        p <- miro(spe, dat_aes=list(col=i), assay=a)
+        expect_identical(
+            p$layers[[1]]$data[[i]], 
+            as.numeric(assay(spe, a)[i, ]))
+    }
+    # default to last
+    p <- miro(spe, dat_aes=list(col=i), assay=NULL)
+    expect_identical(
+        p$layers[[1]]$data[[i]], 
+        as.numeric(assay(spe, a)[i, ]))
 })
 
 # pol ----
@@ -61,44 +102,5 @@ test_that("mol", {
     x <- miro(spe, mol=mol, keys=i)
     expect_s3_class(x, "ggplot")
     expect_length(x$layers, 1)
-})
-
-# uts ----
-
-test_that("assay", {
-    # invalid
-    i <- sample(rownames(spe), 1)
-    expect_error(miro(spe, dat_aes=list(col=i), assay="x"))
-    # valid
-    assay(spe, 2) <- assay(spe, 1)/2
-    for (a in c(1, 2)) {
-        p <- miro(spe, dat_aes=list(col=i), assay=a)
-        expect_identical(
-            p$layers[[1]]$data[[i]], 
-            as.numeric(assay(spe, a)[i, ]))
-    }
-    # default to last
-    p <- miro(spe, dat_aes=list(col=i), assay=NULL)
-    expect_identical(
-        p$layers[[1]]$data[[i]], 
-        as.numeric(assay(spe, a)[i, ]))
-})
-
-test_that("dat_t", {
-    spe$x <- runif(ncol(spe))
-    .x <- \(p) p$layers[[1]]$data$x
-    # identity
-    p <- miro(spe, dat_aes=list(col="x"), dat_t="n")
-    expect_identical(.x(p), spe$x)
-    # quantile scaling
-    p <- miro(spe, dat_aes=list(col="x"), dat_t="q")
-    expect_equal(range(.x(p)), c(0, 1))
-    # z-normalization
-    p <- miro(spe, dat_aes=list(col="x"), dat_t="z")
-    expect_equal(mean(.x(p)), 0)
-    expect_equal(sd(.x(p)), 1)
-    # custom function
-    p <- miro(spe, dat_aes=list(col="x"), dat_t=log)
-    expect_identical(.x(p), log(spe$x))
 })
     
