@@ -189,11 +189,11 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
             c <- dat_aes[[col[chk]]]
             if (!.is_col(c)) {
                 dat[[c]] <- .t(dat[[c]], dat_t)
+                dat <- .hl(hl, dat, c)
                 map$colour <- aes(.data[[c]])[[1]]
                 dat_aes <- dat_aes[!names(dat_aes) %in% col]
             }
         } else c <- switch(thm, w="black", b="white")
-        dat <- .hl(hl, dat, c)
         args <- list(mapping=map, data=dat)
         geo <- do.call(geom_point, c(args, dat_aes))
         lys <- .aes(dat, c, thm, dat_pal, na, typ="c")

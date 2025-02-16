@@ -24,6 +24,7 @@ package: "`r BiocStyle::pkg_ver('miro')`"
 ```{r load-libs, message=FALSE, warning=FALSE}
 library(miro)
 library(OSTA.data)
+library(patchwork)
 library(SpatialExperiment)
 library(SpatialExperimentIO)
 ```
@@ -80,6 +81,26 @@ miro(spe, sub="roj",
     keys=c("DUOX2", "VWF", "MZB1"),
     mol_pal=c("magenta", "blue", "gold"))
 ```
+
+# Utilities
+
+## subsetting
+
+```{r fig.width=7, fig.height=3.5}
+aes <- list(fill="total_counts")
+miro(spe, pol=p, sub="roi", pol_aes=aes) +
+miro(spe, pol=p, sub="roj", pol_aes=aes) 
+```
+
+## highlighting
+
+```{r fig.width=4, fig.height=3.5}
+miro(spe, 
+    sub="roi", # subset 1st regions
+    hl="roj", # highlight 2nd region
+    dat_aes=list(col="total_counts", size=0))
+```
+
 
 # Appendix
 

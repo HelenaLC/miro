@@ -21,6 +21,7 @@ Suggests:
     knitr,
     BiocStyle,
     OSTA.data,
+    patchwork,
     SpatialExperimentIO,
     testthat (>= 3.0.0)
 biocViews:
