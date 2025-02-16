@@ -9,7 +9,7 @@
 \usage{
 \S4method{miro}{SpatialExperiment}(dat, pol = NULL, mol = NULL, ...)
 
-\S4method{miro}{SingleCellExperiment}(dat, pol = NULL, mol = NULL, assay = "logcounts", ...)
+\S4method{miro}{SingleCellExperiment}(dat, pol = NULL, mol = NULL, assay = NULL, ...)
 
 \S4method{miro}{data.frame}(
   dat,
@@ -46,7 +46,8 @@
 
 \item{assay}{scalar integer or character string;
 specifies which `assay` data to use when coloring by
-feature names; ignored when `dat` is a `data.frame`}
+feature names; defaults to the last one available;
+ignored when `dat` is a `data.frame`}
 
 \item{xy}{logical scalar; should centroids be rendered?
 by default, they are hidden when `pol/mol` aren't NULL}

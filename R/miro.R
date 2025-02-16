@@ -110,13 +110,12 @@ setMethod("miro", "SingleCellExperiment",
         col <- c("col", "color", "colour")
         if (any(chk <- col %in% names(dat_aes))) 
             c <- dat_aes[[col[chk]]]
-        if (is.null(assay) && !is.null(c(f, c))
-            && any(c(f, c) %in% rownames(dat))) {
-            assay <- tail(assayNames(dat), 1)
+        if (!is.null(c(f, c)) && any(c(f, c) %in% rownames(dat))) {
+            if (is.null(assay)) assay <- tail(assayNames(dat), 1)
+            fc <- intersect(rownames(dat), c(f, c))
+            as <- assay(dat[fc, ], assay)
+            df <- cbind(df, t(as.matrix(as)))
         }
-        fc <- intersect(rownames(dat), c(f, c))
-        as <- assay(dat[fc, ], assay)
-        df <- cbind(df, t(as.matrix(as)))
         miro(dat=df, pol=ps, mol=ms, ...)
     })
 
