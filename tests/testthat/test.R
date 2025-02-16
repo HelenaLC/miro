@@ -38,7 +38,7 @@ test_that("df", {
 test_that("sub", {
     f <- \(p, i) {
         df <- p$layers[[1]]$data
-        j <- rownames(.df(p))
+        j <- rownames(df)
         i <- colnames(spe)[i]
         expect_identical(i, j)
     }

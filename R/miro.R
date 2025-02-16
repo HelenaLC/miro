@@ -103,15 +103,16 @@ setMethod("miro", "SingleCellExperiment",
         }
         # subsetting
         sub <- list(...)$sub
-        if (!is.null(sub)) {
-            if (is.character(sub)) {
-                stopifnot(
-                    length(sub) == 1, 
-                    sub %in% names(colData(dat)))
-                dat <- dat[, dat[[sub]]]
-            } else dat <- dat[, sub]
-            sub <- NULL
-        }
+        dat <- .sub(dat, sub)
+        # if (!is.null(sub)) {
+        #     if (is.character(sub)) {
+        #         stopifnot(
+        #             length(sub) == 1, 
+        #             sub %in% names(colData(dat)))
+        #         dat <- dat[, dat[[sub]]]
+        #     } else dat <- dat[, sub]
+        #     sub <- NULL
+        # }
         # aesthetics
         df <- data.frame(colData(dat), check.names=FALSE)
         pol_aes <- list(...)$pol_aes
@@ -156,10 +157,15 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     if (is.null(dat_id)) dat_id <- .id(dat, "dat_id")
     if (is.null(na)) na <- switch(thm, b="grey20", w="grey80")
     # subsetting
-    if (!is.null(sub)) {
-        print(1)
-        dat <- dat[sub, ]
-    }
+    dat <- .sub(dat, sub)
+    # if (!is.null(sub)) {
+    #     if (is.character(sub)) {
+    #         stopifnot(
+    #             length(sub) == 1, 
+    #             sub %in% names(dat))
+    #         dat <- dat[dat[[sub]], ]
+    #     } else dat <- dat[sub, ]
+    # }
     # polygons
     ps <- if (!is.null(pol)) {
         vars <- as.list(environment())
@@ -196,6 +202,16 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     # plotting
     ggplot() + .thm(thm) + ps + ms + cs
 })
+
+.sub <- \(dat, sub) {
+    if (is.null(sub)) return(dat)
+    typ <- ifelse(is.data.frame(dat), "df", "se")
+    if (is.character(sub)) {
+        df <- switch(typ, df=dat, se=colData(dat))
+        stopifnot(length(sub) == 1, sub %in% names(df))
+        switch(typ, df=dat[dat[[sub]], ], se=dat[, dat[[sub]]])
+    } else switch(typ, df=dat[sub, ], se=dat[, sub])
+}
 
 .hl <- \(hl, df, i) {
     if (is.null(hl)) return(df)
