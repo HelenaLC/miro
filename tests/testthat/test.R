@@ -48,6 +48,20 @@ test_that("molecules", {
 
 # uts ----
 
+test_that("assay", {
+    # invalid
+    i <- sample(rownames(spe), 1)
+    expect_error(miro(spe, dat_aes=list(col=i), assay="x"))
+    # valid
+    assay(spe, 2) <- assay(spe, 1)/2
+    for (a in c(1, 2)) {
+        p <- miro(spe, dat_aes=list(col=i), assay=a)
+        expect_identical(
+            p$layers[[1]]$data[[i]], 
+            as.numeric(assay(spe, a)[i, ]))
+    }
+})
+
 test_that("dat_t", {
     spe$x <- runif(ncol(spe))
     p <- miro(spe, dat_aes=list(col="x"), dat_t="n")

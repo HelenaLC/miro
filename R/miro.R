@@ -37,7 +37,8 @@
 #'   either `"b"`lack or `"w"`hite base theme
 #' @param assay scalar integer or character string;
 #'   specifies which `assay` data to use when coloring by
-#'   feature names; ignored when `dat` is a `data.frame`
+#'   feature names; defaults to the last one available;
+#'   ignored when `dat` is a `data.frame`
 #' @param dat_aes,pol_aes,mol_aes list; 
 #'   aesthetics for rendering centroids/polygons/molecules;
 #'   passed to `geom_point` for centroids/molecules, 
@@ -90,7 +91,7 @@ setMethod("miro", "SpatialExperiment", \(dat, pol=NULL, mol=NULL, ...) {
 #' @rdname miro
 #' @export
 setMethod("miro", "SingleCellExperiment", 
-    \(dat, pol=NULL, mol=NULL, assay="logcounts", ...) {
+    \(dat, pol=NULL, mol=NULL, assay=NULL, ...) {
         # validity
         ps <- if (!is.null(pol)) {
             stopifnot(is.character(pol) && length(pol) == 1)
@@ -101,14 +102,21 @@ setMethod("miro", "SingleCellExperiment",
             metadata(dat)[[mol]]
         }
         # wrangling
-        pol_aes <- list(...)$pol_aes
         df <- data.frame(colData(dat), check.names=FALSE)
-        if (!is.null(f <- pol_aes$fill) && all(f %in% rownames(dat))) {
-            stopifnot(is.character(assay), length(assay) == 1)
-            na <- is.na(match(assayNames(dat), assay))
-            if (all(na)) stop("'dat' has no ", dQuote(assay), " assay")
-            df[[f]] <- assay(dat, assay)[f, ]
+        pol_aes <- list(...)$pol_aes
+        f <- pol_aes$fill
+        
+        dat_aes <- list(...)$dat_aes
+        col <- c("col", "color", "colour")
+        if (any(chk <- col %in% names(dat_aes))) 
+            c <- dat_aes[[col[chk]]]
+        if (is.null(assay) && !is.null(c(f, c))
+            && any(c(f, c) %in% rownames(dat))) {
+            assay <- tail(assayNames(dat), 1)
         }
+        fc <- intersect(rownames(dat), c(f, c))
+        as <- assay(dat[fc, ], assay)
+        df <- cbind(df, t(as.matrix(as)))
         miro(dat=df, pol=ps, mol=ms, ...)
     })
 
