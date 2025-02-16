@@ -60,6 +60,11 @@ test_that("assay", {
             p$layers[[1]]$data[[i]], 
             as.numeric(assay(spe, a)[i, ]))
     }
+    # default to last
+    p <- miro(spe, dat_aes=list(col=i), assay=NULL)
+    expect_identical(
+        p$layers[[1]]$data[[i]], 
+        as.numeric(assay(spe, a)[i, ]))
 })
 
 test_that("dat_t", {

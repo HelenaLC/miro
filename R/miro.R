@@ -111,7 +111,7 @@ setMethod("miro", "SingleCellExperiment",
         if (any(chk <- col %in% names(dat_aes))) 
             c <- dat_aes[[col[chk]]]
         if (!is.null(c(f, c)) && any(c(f, c) %in% rownames(dat))) {
-            if (is.null(assay)) assay <- tail(assayNames(dat), 1)
+            if (is.null(assay)) assay <- length(assays(dat))
             fc <- intersect(rownames(dat), c(f, c))
             as <- assay(dat[fc, ], assay)
             df <- cbind(df, t(as.matrix(as)))
