@@ -187,20 +187,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
                 dat_aes <- dat_aes[!names(dat_aes) %in% col]
             }
         } else c <- switch(thm, w="black", b="white")
-        # highlighting
-        if (!is.null(hl)) {
-            if (is.character(hl)) {
-                stopifnot(length(hl) == 1, !is.null(dat[[hl]]))
-                hl <- dat[[hl]]
-            } else if (is.numeric(hl)) {
-                stopfinot(hl == round(hl), min(hl) > 0, max(hl) < nrow(dat))
-                hl <- seq_len(nrow(dat)) %in% hl
-            } 
-            if (is.logical(hl)) {
-                stopifnot(length(hl) == nrow(dat))
-            } else stop("'hl' invalid; see '?miro'")
-            dat[[c]][!hl] <- NA
-        }
+        dat <- .hl(hl, dat, c)
         args <- list(mapping=map, data=dat)
         geo <- do.call(geom_point, c(args, dat_aes))
         lys <- .aes(dat, c, thm, dat_pal, na, typ="c")
@@ -209,6 +196,22 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     # plotting
     ggplot() + .thm(thm) + ps + ms + cs
 })
+
+.hl <- \(hl, df, i) {
+    if (is.null(hl)) return(df)
+    if (is.character(hl)) {
+        stopifnot(length(hl) == 1, !is.null(df[[hl]]))
+        hl <- df[[hl]]
+    } else if (is.numeric(hl)) {
+        stopifnot(hl == round(hl), min(hl) > 0, max(hl) < nrow(df))
+        hl <- seq_len(nrow(df)) %in% hl
+    } 
+    if (is.logical(hl)) {
+        stopifnot(length(hl) == nrow(df))
+    } else stop("'hl' invalid; see '?miro'")
+    df[[i]][!hl] <- NA
+    return(df)
+}
 
 .aes <- \(df, i, thm, pal, na, typ=c("f", "c")) {
     typ <- match.arg(typ)
