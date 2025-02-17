@@ -8,8 +8,6 @@ output:
     toc: true
     toc_depth: 2
     toc_float: true
-abstract: |
-  Description of your vignette
 vignette: |
   %\VignetteIndexEntry{miro}
   %\VignetteEngine{knitr::rmarkdown}
