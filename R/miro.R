@@ -23,7 +23,7 @@
 #' @param mol_key character string; feature identifier
 #' @param keys character vectors; specifies which 
 #'   features molecules should be rendered for
-#' @param dat_t character string or function; 
+#' @param t character string or function; 
 #'   specifies whether/how to transform values being 
 #'   colored by; `n`one, `z`-scale, or `q`uantile scale
 #' @param xy logical scalar; should centroids be rendered?
@@ -55,7 +55,7 @@
 #' p <- "cell_boundaries"
 #' 
 #' # centroids
-#' miro(spe, dat_aes=list(size=0.2, col="total_counts"), dat_t=log10)
+#' miro(spe, dat_aes=list(size=0.2, col="total_counts"), t=log10)
 #'   
 #' # polygons
 #' miro(spe, pol=p, pol_aes=list(fill="cell_area"))
@@ -132,7 +132,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     mol_xy=NULL, mol_id=NULL, mol_pal=NULL, mol_aes=list(), 
     mol_key=NULL, keys=NULL,
     fov_id=NULL, # TODO fov_lab=FALSE, fov_box=FALSE, 
-    dat_t=c("n", "q", "z"), 
+    t=c("n", "q", "z"), 
     sub=NULL, hl=NULL, na=NULL, thm=c("w", "b")) {
     # validity
     thm <- match.arg(thm)
@@ -175,17 +175,11 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
         if (.is_col(c)) {
             dat[[c]] <- c
         } else {
-            dat[[c]] <- .t(dat[[c]], dat_t)
+            dat[[c]] <- .t(dat[[c]], t)
             
         }
         map$colour <- aes(.data[[c]])[[1]]
         dat_aes <- dat_aes[!names(dat_aes) %in% col]
-            # if (!.is_col(c)) {
-            #     dat[[c]] <- .t(dat[[c]], dat_t)
-            #     #dat <- .hl(hl, dat, c)
-            #     map$colour <- aes(.data[[c]])[[1]]
-            #     dat_aes <- dat_aes[!names(dat_aes) %in% col]
-            # }
         dat <- .hl(dat, hl, c, na)
         args <- list(mapping=map, data=dat)
         geo <- do.call(geom_point, c(args, dat_aes))
@@ -193,7 +187,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
         c(list(geo), lys)
     }
     # plotting
-    ggplot() + .thm(thm) + ps + ms + cs
+    ggplot() + .thm(thm) + ps + ms + ggnewscale::new_scale_color() + cs
 })
 
 .sub <- \(dat, sub) {
@@ -276,7 +270,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
 # pol ----
 
 .pol <- \(dat, dat_id=NULL, fov_id=NULL, hl=NULL, na=NULL, thm=NULL,
-    pol, pol_id=NULL, pol_xy=NULL, pol_aes=list(), pol_pal=NULL) {
+    pol, pol_id=NULL, pol_xy=NULL, pol_aes=list(), pol_pal=NULL, t=NULL) {
     ps <- .pq(pol, "pol")
     if (is.null(pol_id)) 
         pol_id <- .id(ps, "pol_id")
@@ -296,18 +290,18 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     # aesthetics
     lys <- list()
     f <- pol_aes$fill
-    if (is.null(f)) {
-        f <- switch(thm, b="grey80", w="grey20")
-        pol_aes$fill <- f
-    } else if (.is_col(f)) {
-        pol_aes$fill <- f
-    } else if (is.character(f)) {
-        pol_aes$fill <- NULL
-        stopifnot(f %in% names(df))
+    if (is.null(f)) f <- switch(thm, b="grey80", w="grey20")
+    if (.is_col(f)) {
+        dat[[f]] <- f
         dat <- .hl(dat, hl, f, na)
         df[[f]] <- dat[[f]][i]
-        lys <- .aes(df, f, thm, pol_pal, na, typ="f")
+    } else {
+        stopifnot(f %in% names(df))
+        dat <- .hl(dat, hl, f, na)
+        df[[f]] <- .t(dat[[f]], t)[i]
     }
+    pol_aes$fill <- NULL
+    lys <- .aes(df, f, thm, pol_pal, na, typ="f")
     if (is.null(pol_xy)) pol_xy <- .pol_xy(df)
     map <- aes(
         x=.data[[pol_xy[1]]], 

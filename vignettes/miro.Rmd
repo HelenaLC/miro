@@ -71,10 +71,10 @@ The following parameter control this layer:
 - `dat_id`: observation identifier (e.g., cell ID)
 - `dat_pal`: character vector of color values to use
 - `dat_aes`: list of aesthetics passed to `geom_point()`
-- `dat_t`: transformation of values being colored by
+- `t`: transformation of values being colored by
 
 ```{r fig.width=4, fig.height=3.5}
-miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), dat_t=log10)
+miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), t=log10)
 ```
 
 For visualizations that include polygons and molecules, 
@@ -101,17 +101,40 @@ m <- "transcripts"
 
 ## Polygons
 
+The following parameter control this layer:
+
+- `pol_xy`: spatial coordinates (`miro` will try to guess)
+- `pol_id`: observation identifier (e.g., cell ID)
+- `pol_pal`: character vector of color values to use
+- `pol_aes`: list of aesthetics passed to `geom_polygon()`
+- `t`: transformation of values being colored by
+
 ```{r fig.height=4, fig.width=4.5}
-miro(spe, sub="roi", pol=p, pol_aes=list(fill="cell_area"))
+.t <- \(.) ifelse(. > 300, 300, .) 
+miro(spe, sub="roi", pol=p, pol_aes=list(fill="cell_area"), t=.t)
 ```
 
 ## Molecules
 
+The following parameter control this layer:
+
+- `mol_xy`: spatial coordinates (`miro` will try to guess)
+- `mol_id`: observation identifier (e.g., cell ID)
+- `mol_key`: feature identifier (e.g., `"symbol"`)
+- `keys`: character vector of features to render
+- `mol_pal`: character vector of color values to use
+- `mol_aes`: list of aesthetics passed to `geom_point()`
+
 ```{r fig.height=4, fig.width=4.5}
-miro(spe, sub="roi", mol=m, keys=c("DUOX2", "MUC12", "VWF"), mol_aes=list(size=0))
+miro(spe, sub="roi", 
+    mol=m, mol_aes=list(size=0),
+    keys=c("DUOX2", "MUC12", "VWF"))
 ```
 
 # Layering
+
+By default, centroids will be hidden when rendering `pol`ygons or `mol`ecules.
+Setting `xy=TRUE` will force showing centroids regardless: 
 
 ```{r fig.width=3, fig.height=3}
 miro(spe, sub="roj",
@@ -119,17 +142,24 @@ miro(spe, sub="roj",
     xy=TRUE, dat_aes=list(col="green", size=0.2))
 ```
 
+Putting it all together, we can visualize centroids, polygons and molecules,
+with separate control over each layer's aesthetics:
+
 ```{r fig.height=4, fig.width=4.5}
 miro(spe, sub="roj",
-    pol=p, pol_aes=list(fill=NA, col="black", size=0.1),
+    xy=TRUE, dat_aes=list(size=0.2, col="grey70"),
+    pol=p, pol_aes=list(fill=NA, col="grey30", size=0.1),
     mol=m, mol_aes=list(size=0.1), 
     keys=c("DUOX2", "VWF", "MZB1"),
     mol_pal=c("magenta", "blue", "gold"))
 ```
 
-# Utilities
+## Subsetting
 
-## subsetting
+Argument `sub` may be used to restrict visuals to a subset of observation, and
+accepts either an (integer) index or logical vector; when operating on SC/PE,
+we can specify a pre-defined `colData` slot that contains a logical vector,
+as already seen in the examples above:
 
 ```{r fig.width=7, fig.height=3.5}
 aes <- list(fill="total_counts")
@@ -137,13 +167,18 @@ miro(spe, pol=p, sub="roi", pol_aes=aes) +
 miro(spe, pol=p, sub="roj", pol_aes=aes) 
 ```
 
-## highlighting
+## Highlighting
 
-```{r fig.width=4, fig.height=3.5}
-miro(spe, 
-    sub="roi", # subset 1st regions
-    hl="roj", # highlight 2nd region
-    dat_aes=list(col="total_counts", size=0))
+Alternatively, we can use `hl` to highlight a subset of observations but not 
+removing any; again, an index/logical vector or data slot may be used for this.
+Color values of non-highlighted observations will be set to NA, such that `na`
+may be used to control the color of these observations:
+
+```{r fig.width=7, fig.height=3.5}
+# subset 1st, highlight 2nd region
+miro(spe, pol=p, sub="roi", hl="roj") +
+# subset 2nd region
+miro(spe, pol=p, sub="roj", hl=spe$cell_area < 100, na="gold")
 ```
 
 # Appendix

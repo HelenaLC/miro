@@ -31,7 +31,7 @@
   mol_key = NULL,
   keys = NULL,
   fov_id = NULL,
-  dat_t = c("n", "q", "z"),
+  t = c("n", "q", "z"),
   sub = NULL,
   hl = NULL,
   na = NULL,
@@ -72,7 +72,7 @@ features molecules should be rendered for}
 
 \item{fov_id}{character string; field of view identifier}
 
-\item{dat_t}{character string or function; 
+\item{t}{character string or function; 
 specifies whether/how to transform values being 
 colored by; `n`one, `z`-scale, or `q`uantile scale}
 
@@ -109,7 +109,7 @@ m <- "transcripts"
 p <- "cell_boundaries"
 
 # centroids
-miro(spe, dat_aes=list(size=0.2, col="total_counts"), dat_t=log10)
+miro(spe, dat_aes=list(size=0.2, col="total_counts"), t=log10)
   
 # polygons
 miro(spe, pol=p, pol_aes=list(fill="cell_area"))

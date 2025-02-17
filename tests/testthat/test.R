@@ -55,13 +55,13 @@ test_that("sub", {
 })
 
 test_that("hl", {
-    a <- "blue"; b <- "red"
     f <- \(x, i, a, b, n, m) {
         p <- miro(x, hl=i, dat_aes=list(col=a), na=b)
         x <- p$layers[[1]]$data[[a]]
         expect_true(sum(x == a) == n)
         expect_true(sum(x == b) == m)
     }
+    a <- "blue"; b <- "red"
     n <- 77; m <- ncol(spe)-n
     # integer
     i <- sample(ncol(spe), n)
@@ -74,21 +74,21 @@ test_that("hl", {
     f(spe, i, a, b, n, m)
 })
 
-test_that("dat_t", {
+test_that("t", {
     spe$x <- runif(ncol(spe))
     .x <- \(p) p$layers[[1]]$data$x
     # identity
-    p <- miro(spe, dat_aes=list(col="x"), dat_t="n")
+    p <- miro(spe, dat_aes=list(col="x"), t="n")
     expect_identical(.x(p), spe$x)
     # quantile scaling
-    p <- miro(spe, dat_aes=list(col="x"), dat_t="q")
+    p <- miro(spe, dat_aes=list(col="x"), t="q")
     expect_equal(range(.x(p)), c(0, 1))
     # z-normalization
-    p <- miro(spe, dat_aes=list(col="x"), dat_t="z")
+    p <- miro(spe, dat_aes=list(col="x"), t="z")
     expect_equal(mean(.x(p)), 0)
     expect_equal(sd(.x(p)), 1)
     # custom function
-    p <- miro(spe, dat_aes=list(col="x"), dat_t=log)
+    p <- miro(spe, dat_aes=list(col="x"), t=log)
     expect_identical(.x(p), log(spe$x))
 })
 
@@ -126,9 +126,7 @@ test_that("pol", {
     expect_s3_class(x$guides$guides$fill, "GuideColourbar")
     expect_identical(as_label(x$layers[[1]]$mapping$fill), i)
     # discrete
-    cd <- colData(spe)
-    str <- vapply(cd, is.character, logical(1))
-    i <- names(cd)[str][1]
+    spe[[i <- "abc"]] <- sample(c("a", "b", "c"), ncol(spe), TRUE)
     x <- miro(spe, pol=pol, pol_aes=list(fill=i))
     expect_s3_class(x$guides$guides$fill, "GuideLegend")
     expect_identical(as_label(x$layers[[1]]$mapping$fill), i)
