@@ -86,7 +86,7 @@ setMethod("miro", "SpatialExperiment", \(dat, pol=NULL, mol=NULL, ...) {
     miro(dat, pol, mol, dat_xy=xy, ...)
 })
 
-#' @importFrom SummarizedExperiment assay assayNames colData
+#' @importFrom SummarizedExperiment assay assays colData
 #' @importFrom S4Vectors metadata
 #' @rdname miro
 #' @export
@@ -101,18 +101,6 @@ setMethod("miro", "SingleCellExperiment",
             stopifnot(is.character(mol) && length(mol) == 1)
             metadata(dat)[[mol]]
         }
-        # subsetting
-        sub <- list(...)$sub
-        dat <- .sub(dat, sub)
-        # if (!is.null(sub)) {
-        #     if (is.character(sub)) {
-        #         stopifnot(
-        #             length(sub) == 1, 
-        #             sub %in% names(colData(dat)))
-        #         dat <- dat[, dat[[sub]]]
-        #     } else dat <- dat[, sub]
-        #     sub <- NULL
-        # }
         # aesthetics
         df <- data.frame(colData(dat), check.names=FALSE)
         pol_aes <- list(...)$pol_aes
@@ -127,11 +115,7 @@ setMethod("miro", "SingleCellExperiment",
             as <- assay(dat[fc, ], assay)
             df <- cbind(df, t(as.matrix(as)))
         }
-        # make sure to skip 'sub' in next call
-        args <- list(...)
-        args$sub <- NULL
-        args[c("dat", "pol", "mol")] <- list(df, ps, ms)
-        do.call(miro, args)
+        miro(dat=df, pol=ps, mol=ms, ...)
     })
 
 #' @importFrom SummarizedExperiment assay colData
@@ -157,15 +141,15 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     if (is.null(dat_id)) dat_id <- .id(dat, "dat_id")
     if (is.null(na)) na <- switch(thm, b="grey20", w="grey80")
     # subsetting
+    if (!is.null(hl) && 
+        !is.character(hl)) {
+        if (is.numeric(hl)) 
+            hl <- seq_len(nrow(dat)) %in% hl
+        stopifnot(length(hl) == nrow(dat))
+        dat$hl <- hl
+        hl <- "hl"
+    }
     dat <- .sub(dat, sub)
-    # if (!is.null(sub)) {
-    #     if (is.character(sub)) {
-    #         stopifnot(
-    #             length(sub) == 1, 
-    #             sub %in% names(dat))
-    #         dat <- dat[dat[[sub]], ]
-    #     } else dat <- dat[sub, ]
-    # }
     # polygons
     ps <- if (!is.null(pol)) {
         vars <- as.list(environment())
@@ -185,15 +169,24 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
             y=.data[[dat_xy[2]]])
         col <- c("col", "color", "colour")
         chk <- col %in% names(dat_aes)
-        if (any(chk)) {
-            c <- dat_aes[[col[chk]]]
-            if (!.is_col(c)) {
-                dat[[c]] <- .t(dat[[c]], dat_t)
-                dat <- .hl(hl, dat, c)
-                map$colour <- aes(.data[[c]])[[1]]
-                dat_aes <- dat_aes[!names(dat_aes) %in% col]
-            }
-        } else c <- switch(thm, w="black", b="white")
+        c <- ifelse(any(chk), 
+            dat_aes[[col[chk]]],
+            switch(thm, w="black", b="white"))
+        if (.is_col(c)) {
+            dat[[c]] <- c
+        } else {
+            dat[[c]] <- .t(dat[[c]], dat_t)
+            
+        }
+        map$colour <- aes(.data[[c]])[[1]]
+        dat_aes <- dat_aes[!names(dat_aes) %in% col]
+            # if (!.is_col(c)) {
+            #     dat[[c]] <- .t(dat[[c]], dat_t)
+            #     #dat <- .hl(hl, dat, c)
+            #     map$colour <- aes(.data[[c]])[[1]]
+            #     dat_aes <- dat_aes[!names(dat_aes) %in% col]
+            # }
+        dat <- .hl(dat, hl, c, na)
         args <- list(mapping=map, data=dat)
         geo <- do.call(geom_point, c(args, dat_aes))
         lys <- .aes(dat, c, thm, dat_pal, na, typ="c")
@@ -213,7 +206,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     } else switch(typ, df=dat[sub, ], se=dat[, sub])
 }
 
-.hl <- \(hl, df, i) {
+.hl <- \(df, hl, i, na) {
     if (is.null(hl)) return(df)
     if (is.character(hl)) {
         stopifnot(length(hl) == 1, !is.null(df[[hl]]))
@@ -225,14 +218,16 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     if (is.logical(hl)) {
         stopifnot(length(hl) == nrow(df))
     } else stop("'hl' invalid; see '?miro'")
-    df[[i]][!hl] <- NA
+    na <- ifelse(.is_col(i), na, NA)
+    df[[i]][!hl] <- na
     return(df)
 }
 
 .aes <- \(df, i, thm, pal, na, typ=c("f", "c")) {
     typ <- match.arg(typ)
     scale <- switch(typ, f="fill", c="color")
-    if (is.null(df[[i]])) return(list())
+    if (is.null(df[[i]])) return(NULL)
+    if (.is_col(i)) return(get(paste0("scale_", scale, "_identity"))())
     if (scale_type(df[[i]]) == "continuous") {
         if (is.null(pal)) pal <- .pal_con
         scale <- get(paste0("scale_", scale, "_gradientn"))
@@ -309,7 +304,7 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     } else if (is.character(f)) {
         pol_aes$fill <- NULL
         stopifnot(f %in% names(df))
-        dat <- .hl(hl, dat, f)
+        dat <- .hl(dat, hl, f, na)
         df[[f]] <- dat[[f]][i]
         lys <- .aes(df, f, thm, pol_pal, na, typ="f")
     }

@@ -54,6 +54,26 @@ test_that("sub", {
     f(miro(spe, sub="foo"), i)
 })
 
+test_that("hl", {
+    a <- "blue"; b <- "red"
+    f <- \(x, i, a, b, n, m) {
+        p <- miro(x, hl=i, dat_aes=list(col=a), na=b)
+        x <- p$layers[[1]]$data[[a]]
+        expect_true(sum(x == a) == n)
+        expect_true(sum(x == b) == m)
+    }
+    n <- 77; m <- ncol(spe)-n
+    # integer
+    i <- sample(ncol(spe), n)
+    f(spe, i, a, b, n, m)
+    # logical
+    i <- seq_len(ncol(spe)) %in% i
+    f(spe, i, a, b, n, m)
+    # 'colData'
+    spe$. <- i; i <- "."
+    f(spe, i, a, b, n, m)
+})
+
 test_that("dat_t", {
     spe$x <- runif(ncol(spe))
     .x <- \(p) p$layers[[1]]$data$x

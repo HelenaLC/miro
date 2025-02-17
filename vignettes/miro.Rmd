@@ -4,7 +4,10 @@ author:
 - name: Helena L. Crowell
   affiliation: National Center for Genomics Analysis (CNAG), Barcelona, Spain
 output:
-  BiocStyle::html_document
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
 abstract: |
   Description of your vignette
 vignette: |
@@ -13,11 +16,25 @@ vignette: |
   %\VignetteEncoding{UTF-8}
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 package: "`r BiocStyle::pkg_ver('miro')`"
+bibliography: refs.bib
 ---
 
 # Preamble
 
 ## Introduction
+
+`miro` provides a one-line command to visualize multi-layered data from
+a .parquet-backed `Spatial-`, `SingleCellExperiment`, or `data.frame`.
+
+To achieve this, data needs to be matched between objects with potentially 
+different dimension names (e.g., spatial coordinates, cell identifiers). 
+
+To try and avoid cumbersome passing of many arguments, `miro` tries to guess 
+these from a catalog of values encountered across commercial platforms such 
+as CosMx (NanoString) and Xenium (10x Genomics).
+
+In addition, each layer is associated with a designed set of aesthetics, 
+(e.g., color mapping, size etc.) allowing for highly flexible visualization.
 
 ## Dependencies
 
@@ -29,6 +46,9 @@ library(SpatialExperiment)
 library(SpatialExperimentIO)
 ```
 
+In this demo, we will rely on 10x Genomics Xenium data on a human CRC biopsy 
+[@Oliveira2024], which comprises around around 400 RNA targets and 340k cells.
+
 ```{r load-data, message=FALSE, warning=FALSE}
 # retrieve Xenium dataset
 id <- "Xenium_HumanColon_Oliveria"
@@ -36,6 +56,31 @@ pa <- OSTA.data_load(id)
 dir.create(td <- tempfile())
 unzip(pa, exdir=td)
 (spe <- readXeniumSXE(td))
+```
+
+# Visuals
+
+## Centroids
+
+By default (`pol=mol=NULL`), `miro` will visualize spatial locations as points;
+in spatial transcriptomics data, these typically correspond to cell centroids.
+
+The following parameter control this layer:
+
+- `dat_xy`: spatial coordinates (defaults to `spatialCoordNames` for SPE)
+- `dat_id`: observation identifier (e.g., cell ID)
+- `dat_pal`: character vector of color values to use
+- `dat_aes`: list of aesthetics passed to `geom_point()`
+- `dat_t`: transformation of values being colored by
+
+```{r fig.width=4, fig.height=3.5}
+miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), dat_t=log10)
+```
+
+For visualizations that include polygons and molecules, 
+we specify two rather small regions of interest (ROIs):
+
+```{r crop-data, message=FALSE, warning=FALSE}
 # crops for demo
 xy <- spatialCoords(spe)
 spe$roi <- 
@@ -44,23 +89,23 @@ spe$roi <-
 spe$roj <- 
     xy[,1]>1400 & xy[,1]<1600 & 
     xy[,2]>1800 & xy[,2]<2000 
+```
+
+Lastly, we specify which `metadata` slots contain molecules
+and polygons (here, cell segmentation boundaries) of interest:
+
+```{r pt}
 p <- "cell_boundaries"
 m <- "transcripts"
 ```
 
-# Centroids
-
-```{r fig.width=4, fig.height=3.5}
-miro(spe, dat_aes=list(stroke=0, size=0.2, col="total_counts"), dat_t=log10)
-```
-
-# Polygons
+## Polygons
 
 ```{r fig.height=4, fig.width=4.5}
 miro(spe, sub="roi", pol=p, pol_aes=list(fill="cell_area"))
 ```
 
-# Molecules
+## Molecules
 
 ```{r fig.height=4, fig.width=4.5}
 miro(spe, sub="roi", mol=m, keys=c("DUOX2", "MUC12", "VWF"), mol_aes=list(size=0))
@@ -100,7 +145,6 @@ miro(spe,
     hl="roj", # highlight 2nd region
     dat_aes=list(col="total_counts", size=0))
 ```
-
 
 # Appendix
 
