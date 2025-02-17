@@ -289,18 +289,20 @@ setMethod("miro", "data.frame", \(dat, pol=NULL, mol=NULL, xy=FALSE,
     df <- cbind(ps, dat[i, j])
     # aesthetics
     lys <- list()
-    f <- pol_aes$fill
-    if (is.null(f)) f <- switch(thm, b="grey80", w="grey20")
-    if (.is_col(f)) {
-        dat[[f]] <- f
-        dat <- .hl(dat, hl, f, na)
-        df[[f]] <- dat[[f]][i]
-    } else {
-        stopifnot(f %in% names(df))
-        dat <- .hl(dat, hl, f, na)
-        df[[f]] <- .t(dat[[f]], t)[i]
+    if (is.null(f <- pol_aes$fill))
+        f <- switch(thm, b="grey80", w="grey20")
+    if (!is.na(f)) {
+        if (.is_col(f)) {
+            dat[[f]] <- f
+            dat <- .hl(dat, hl, f, na)
+            df[[f]] <- dat[[f]][i]
+        } else if (is.character(f)) {
+            stopifnot(f %in% names(df))
+            dat <- .hl(dat, hl, f, na)
+            df[[f]] <- .t(dat[[f]], t)[i]
+        }
+        pol_aes$fill <- NULL
     }
-    pol_aes$fill <- NULL
     lys <- .aes(df, f, thm, pol_pal, na, typ="f")
     if (is.null(pol_xy)) pol_xy <- .pol_xy(df)
     map <- aes(
