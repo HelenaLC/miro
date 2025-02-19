@@ -49,7 +49,7 @@ In this demo, we will rely on 10x Genomics Xenium data on a human CRC biopsy
 
 ```{r load-data, message=FALSE, warning=FALSE}
 # retrieve Xenium dataset
-id <- "Xenium_HumanColon_Oliveria"
+id <- "Xenium_HumanColon_Oliveira"
 pa <- OSTA.data_load(id)
 dir.create(td <- tempfile())
 unzip(pa, exdir=td)

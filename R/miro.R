@@ -94,11 +94,11 @@ setMethod("miro", "SingleCellExperiment",
     \(dat, pol=NULL, mol=NULL, assay=NULL, ...) {
         # validity
         ps <- if (!is.null(pol)) {
-            stopifnot(is.character(pol) && length(pol) == 1)
+            stopifnot(is.character(pol), length(pol) == 1)
             metadata(dat)[[pol]]
         }
         ms <- if (!is.null(mol)) {
-            stopifnot(is.character(mol) && length(mol) == 1)
+            stopifnot(is.character(mol), length(mol) == 1)
             metadata(dat)[[mol]]
         }
         # aesthetics
