@@ -190,6 +190,9 @@ wrap_plots(ps, nrow=2) &
 
 ## subsetting
 
+> TODO: option to sample color space uniformly, or in a specific direction,
+to visualize features of interest for a particular region.
+
 Let's dive deeper into the malignant tissue regions. For simplicity, we here
 subset these by filtering on PCs and recomputing PCs on the remaining cells:
 (Note that this is a toy example and should not be done in practice.)
