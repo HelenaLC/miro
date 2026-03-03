@@ -1,0 +1,30 @@
+Type: Package
+Package: miro
+Version: 0.99.0
+Title: What the Package Does (Title Case)
+Description: More about what it does (maybe more than one line).
+    Continuation lines should be indented.
+Depends: R (>= 4.5)
+Authors@R: c(
+	person("Helena L.", "Crowell", 
+	    role=c("aut", "cre", "fnd"),
+	    email="helena@crowell.eu", 
+	    comment=c(ORCID="0000-0002-4801-1767")))
+License: GPL (>=2)
+Encoding: UTF-8
+URL: https://github.com/HelenaLC/miro
+BugReports: https://github.com/HelenaLC/miro/issues
+Imports:
+  stats,
+  methods,
+  ggplot2,
+  colorspace,
+  SingleCellExperiment,
+  SummarizedExperiment
+Suggests:
+  HDF5Array,
+  OSTA.data,
+  VisiumIO,
+  scater,
+  scran
+RoxygenNote: 7.3.3
