@@ -15,13 +15,18 @@ vignette: |
   %\VignetteEncoding{UTF-8}
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 package: "`r BiocStyle::pkg_ver('miro')`"
+bibliography: "`r file.path(system.file('extdata', package='miro'), 'bib.bib')`"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(message=FALSE, warning=FALSE, fig.align="center")
+library(BiocStyle)
 ```
 
 # preamble
+
+As a proof of concept, we will process 10x Genomics Visium data comprising
+a single tissue section from a colorectal cancer biopsy [@deOliveira2025].
 
 ## libs
 
@@ -38,6 +43,13 @@ set.seed(260303)
 ```
 
 ## data
+
+We'll start out by retrieving vendor outputs with `r Biocpkg("OSTA.data")``,
+reading data into a `r Biocpkg("SpatialExperiment")` with `r Biocpkg("VisiumIO")`,
+and performing minimal processing, namely:
+- log-library size normalization
+- identifying highly variable features
+- principal component analysis (PCA)
 
 ```{r load-data, cache=TRUE}
 # retrieval
@@ -63,6 +75,16 @@ spe
 ```
 
 # analysis
+
+We can now interpret PCs in terms of colors by rescaling and interpreting them
+as coordinates in the CIELAB color space (see `?colorspace::LAB()`), where 
+
+- $a\in[-100,100]$ green-red ($<0$ = green, $>0$ = red)
+- $b\in[-100,100]$ blue-yellow ($<0$ = blue, $>0$ = yellow) 
+- $L\in[0,100]$ lightness or luminance (0 = black, 100 = white).
+
+By default, PCs 1-3 will be used for ABL, but argument `dims`
+(default `3L`) can be used to control which components to use.
 
 ```{r echo=-1}
 options(width=60)
@@ -103,10 +125,11 @@ wrap_plots(ps, nrow=1)
 
 > TODO: come up w better viz, e.g., circular with repeling labels?
 
-- `dims`: dimensions to use
-- `L`: luminance; passed to `LAB()`
-- `gs`: features to use; can be a character vector or scalar integer,  
-  in which case the top-`gs` features per dimension will be used
+We can also visualize feature loadings in a biplot with the LAB color space 
+as background (note that $L$ remains fixed here). Argument `gs` may be used
+to control which features to include; this can be either a character vector 
+or scalar integer, in which case the top-`gs` features in each dimension 
+will be determined (per absolute values).
 
 ```{r plt-bi, fig.width=6, fig.height=3}
 ig <- grepv("^IGH", rownames(spe))
