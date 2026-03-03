@@ -158,6 +158,20 @@ miroBiplot(spe, gs=5L) +
 miroBiplot(spe, gs=ig, L=100)
 ```
 
+# interpretation
+
+## loadings
+
+We can now ask something like "Which genes are driving the red region above?", 
+which would correspond to positive values for PC1; here, these contain a few
+classical smooth muscle cell markers (e.g., MHY11, CNN1, DES, TAGLN, ACTG2):
+
+```{r}
+pcs <- reducedDim(spe, "PCA")
+rot <- attr(pcs, "rotation")
+tail(names(sort(rot[, 1])), 10)
+```
+
 # appendix
 
 <style type="text/css"> .smaller {font-size:10px} </style>
