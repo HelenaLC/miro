@@ -39,6 +39,7 @@ library(VisiumIO)
 library(OSTA.data)
 library(patchwork)
 library(HDF5Array)
+library(SpatialExperiment)
 set.seed(260303)
 ```
 
@@ -63,8 +64,12 @@ spe <- TENxVisium(
     spacerangerOut=file.path(td, "outs"),
     images="lowres", format="h5") |>
     import()
-rownames(spe) <- rowData(spe)$Symbol
+
+# wrangling
 metadata(spe) <- list()
+rownames(spe) <- rowData(spe)$Symbol
+img <- as.raster(imgData(spe)$data[[1]])
+imgData(spe)$data[[1]] <- SpatialImage(img)
 
 # processing
 spe <- logNormCounts(spe)
@@ -72,6 +77,22 @@ tbl <- modelGeneVar(spe)
 hvg <- getTopHVGs(tbl, n=2e3)
 spe <- runPCA(spe, subset_row=hvg)
 spe
+```
+
+Let's visualize the corresponding hematoxylin and eosin (H&E) staining.
+On the right-hand side, we crop to the region covered by Visium spots:
+
+```{r plt-he, echo=-1, fig.width=8, fig.height=2.5}
+par(mfrow=c(1, 2), mar=c(0,0,0,0))
+mx <- as.raster(getImg(spe))
+sf <- imgData(spe)$scaleFactor
+xy <- sf*spatialCoords(spe)
+xy <- ceiling(colRanges(xy))
+i <- seq(xy[2, 1], xy[2, 2])
+j <- seq(xy[1, 1], xy[1, 2])
+plot(mx[rev(seq_len(nrow(mx))), ])
+do.call(rect, as.list(c(xy)))
+plot(mx[rev(i), j])
 ```
 
 # analysis
