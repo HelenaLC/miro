@@ -188,6 +188,24 @@ wrap_plots(ps, nrow=2) &
     scale_color_gradientn(colors=rev(hcl.colors(9, "Batlow")))
 ```
 
+## subsetting
+
+Let's dive deeper into the malignant tissue regions. For simplicity, we here
+subset these by filtering on PCs and recomputing PCs on the remaining cells:
+(Note that this is a toy example and should not be done in practice.)
+
+```{r sub, fig.width=8, fig.height=4}
+idx <- pcs[, 1] < 0 & pcs[, 2] > -20
+ncol(sub <- spe[, idx])
+tbl <- modelGeneVar(sub)
+hvg <- getTopHVGs(tbl, n=2e3)
+sub <- runPCA(sub, subset_row=hvg)
+miroSpatial(sub) + miroBiplot(sub)
+```
+
+We now start seeing a separation of stem-like epithelia (LGR5) towards the left,
+with mixed borders reflecting bleeding from surrounding stroma (COL3A1, IGFBP5).
+
 # appendix
 
 <style type="text/css"> .smaller {font-size:10px} </style>
