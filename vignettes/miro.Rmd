@@ -31,14 +31,18 @@ a single tissue section from a colorectal cancer biopsy [@deOliveira2025].
 ## libs
 
 ```{r load-deps}
+library(pals)
 library(miro)
 library(scran)
 library(scater)
 library(ggplot2)
+library(spacexr)
+library(msigdbr)
 library(VisiumIO)
 library(OSTA.data)
 library(patchwork)
 library(HDF5Array)
+library(DropletUtils)
 library(SpatialExperiment)
 set.seed(260303)
 ```
@@ -52,7 +56,7 @@ and performing minimal processing, namely:
 - identifying highly variable features
 - principal component analysis (PCA)
 
-```{r load-data, cache=TRUE}
+```{r load-data}
 # retrieval
 id <- "Visium_HumanColon_Oliveira"
 pa <- OSTA.data_load(id)
@@ -68,17 +72,11 @@ spe <- TENxVisium(
 
 # wrangling
 metadata(spe) <- list()
-rownames(spe) <- rowData(spe)$Symbol
+sym <- rowData(spe)$Symbol
+rownames(spe) <- make.unique(sym)
 spatialCoordsNames(spe) <- c("x", "y")
 img <- as.raster(imgData(spe)$data[[1]])
 imgData(spe)$data[[1]] <- SpatialImage(img)
-
-# processing
-spe <- logNormCounts(spe)
-tbl <- modelGeneVar(spe)
-hvg <- getTopHVGs(tbl, n=2e3)
-spe <- runPCA(spe, subset_row=hvg)
-spe
 ```
 
 Let's visualize the corresponding hematoxylin and eosin (H&E) staining.
@@ -99,6 +97,103 @@ plot(mx[rev(i), j])
 
 # analysis
 
+## reduction
+
+```{r pro}
+spe <- logNormCounts(spe)
+tbl <- modelGeneVar(spe)
+hvg <- getTopHVGs(tbl, n=2e3)
+spe <- runPCA(spe, subset_row=hvg)
+```
+
+## deconvolution
+
+```{r echo=FALSE}
+run <- !file.exists(rds <- "../inst/extdata/dec.rds")
+```
+
+```{r sce, eval=run}
+# retrieve dataset from OSF repo
+id <- "Chromium_HumanColon_Oliveira"
+pa <- OSTA.data_load(id)
+dir.create(td <- tempfile())
+unzip(pa, exdir=td)
+# read into 'SingleCellExperiment'
+fs <- list.files(td, full.names=TRUE)
+h5 <- grep("h5$", fs, value=TRUE)
+sce <- read10xCounts(h5, col.names=TRUE)
+# add cell metadata
+csv <- grep("csv$", fs, value=TRUE)
+cd <- read.csv(csv, row.names=1)
+colData(sce)[names(cd)] <- cd[colnames(sce), ]
+# use gene symbols as feature names
+rownames(sce) <- make.unique(rowData(sce)$Symbol)
+# exclude cells deemed to be of low-quality
+sce <- sce[, sce$QCFilter == "Keep"]
+```
+
+```{r dec, eval=run}
+# prep reference data (Chromium);
+# subset cells from same patient
+.sce <- sce[, grepl("P2", sce$Patient)]
+# downsample to at most 2,000 cells per cluster
+cs <- split(seq_len(ncol(.sce)), .sce$Level1)
+cs <- lapply(cs, \(.) sample(., min(length(.), 2e3)))
+.sce <- .sce[, unlist(cs)]
+# run 'RCTD' deconvolution
+rctd_data <- createRctd(spe, .sce, cell_type_col="Level1")
+res <- runRctd(rctd_data, max_cores=5, rctd_mode="full")
+ws <- assay(res)
+```
+
+```{r echo=FALSE}
+if (run) saveRDS(ws, rds) else ws <- readRDS(rds)
+```
+
+```{r lab}
+# scale weights such that they sum to 1
+ws <- sweep(ws, 2, colSums(ws), `/`)
+# add proportion estimates as metadata
+ws <- data.frame(t(as.matrix(ws)))
+colData(spe)[names(ws)] <- ws[colnames(spe), ]
+# majority vote assignment
+mx <- apply(ws, 1, which.max)
+spe$RCTD <- factor(names(ws)[mx])
+# compartment-level assignment
+lab <- list(
+    tum="Tumor",
+    epi="Intestinal.Epithelial",
+    imm=c("B.cells", "T.cells", "Myeloid"),
+    str=c("Endothelial", "Fibroblast", "Smooth.Muscle"))
+idx <- match(spe$RCTD, unlist(lab))
+lab <- rep.int(names(lab), sapply(lab, length))
+table(spe$RCTD, spe$Domain <- factor(lab[idx]))
+```
+
+# visuals
+
+```{r}
+xy <- spatialCoords(spe); pc <- reducedDim(spe, "PCA")
+df <- data.frame(fd <- calcHex(spe), colData(spe), xy, pc)
+thm <- list(
+    theme_bw(), coord_equal(),
+    geom_point(size=1, alpha=2/3),
+    theme(panel.grid.minor=element_blank()))
+col_dis <- scale_color_manual(values=unname(trubetskoy()))
+col_con <- scale_color_gradientn(colors=rev(hcl.colors(9, "Batlow")))
+```
+
+## spatial
+
+Let's start by visualizing the first three PCs over the tissue. In these data,
+we can observe that they delineate stroma from healthy and malignant epithelium:
+
+```{r plt-pc, fig.width=12, fig.height=3}
+ps <- lapply(paste0("PC", seq_len(3)), \(.)
+    ggplot(df, aes(x, y, col=.data[[.]])))
+wrap_plots(ps, nrow=1) & thm & col_con
+```
+
 We can now interpret PCs in terms of colors by rescaling and interpreting them
 as coordinates in the CIELAB color space (see `?colorspace::LAB()`), where 
 
@@ -111,53 +206,36 @@ By default, PCs 1-3 will be used for ABL, but argument `dims`
 
 ```{r echo=-1}
 options(width=60)
-head(df <- calcHex(spe))
+head(fd <- calcHex(spe))
 ```
 
-```{r fig.width=12, fig.height=6, class.source="fold-hide"}
-pc <- reducedDim(spe, "PCA")
-ts <- c(0, -0.5*pi, -pi, -1.5*pi)
-names(ts) <- c("0", "-pi/2", "-pi", "-3pi/2")
-lapply(names(ts), \(.) {
-    fd <- calcHex(spe, t=ts[.])
-    df <- data.frame(pc, fd)
-    ggplot(fd, aes(A, B, col=hex)) + 
-    ggtitle(paste("theta =", .)) +
-    ggplot(df, aes(PC1, PC2, col=hex)) +
-    plot_layout(ncol=1) &
-        geom_point(alpha=0.5) &
-        scale_color_identity() &
-        theme_bw() & coord_equal() &
-        theme(panel.grid.minor=element_blank())
-}) |> wrap_plots(nrow=1)
+```{r plt-lab, fig.width=12, fig.height=4}
+ps <- list(
+    ggplot(df, aes(PC1, PC2, col=hex)) + ggtitle("principal components (PCs)"),
+    ggplot(fd, aes(A, B, col=hex)) + ggtitle("LAB-rescaled PCs"),
+    ggplot(df, aes(x, y, col=hex)) + ggtitle("LAB spatially"))
+wrap_plots(ps, nrow=1) & thm & scale_color_identity()
 ```
 
-# visuals
+For comparison, we also visualize deconvolution results spatially:
 
-## spatial
-
-Let's start by visualizing the first three PCs over the tissue. In these data,
-we can observe that they delineate stroma from healthy and malignant epithelium:
-
-```{r plt-pc, fig.width=12, fig.height=3}
-xy <- spatialCoords(spe)
-dr <- reducedDim(spe, "PCA")
-df <- data.frame(xy, dr)
-ps <- lapply(head(colnames(dr), 3), \(.)
-    ggplot(df, aes(x, y, col=.data[[.]])))
-wrap_plots(ps, nrow=1) &
-    geom_point(size=1) & coord_equal() &
-    theme_bw() & theme(panel.grid.minor=element_blank()) &
-    scale_color_gradientn(colors=rev(hcl.colors(9, "Batlow")))
+```{r plt-dec, fig.width=12, fig.height=4}
+ps <- list(
+    ggplot(df, aes(x, y, col=RCTD)) + ggtitle("deconvolution majority vote"),
+    ggplot(df, aes(x, y, col=Domain)) + ggtitle("compartment-level label"))
+wrap_plots(ps, nrow=1) & thm & col_dis &
+    theme(legend.key.size=unit(0, "lines")) &
+    guides(col=guide_legend(override.aes=list(alpha=1)))
 ```
 
-Next, we represent PCs 1-3, 3-5, and 5-7 as LAB colors,
-and again visualizing over the tissue:
+We can also represent higher PCs as LAB, and again visualizing over the tissue
+to start seeing variability within domains; e.g., we can observe some variability
+within the tumor (left compared to right) and stroma (smooth muscle vs. fibroblasts).
 
 > TODO: legend, tho not sure what that should look like.
 
 ```{r plt-xy, fig.height=4, fig.width=12}
-ds <- list(1:3, 3:5, 5:7)
+ds <- list(3:5, 5:7, c(3, 5, 7))
 ps <- lapply(ds, \(.) miroSpatial(spe, dim=.))
 wrap_plots(ps, nrow=1)
 ```
@@ -178,6 +256,20 @@ miroBiplot(spe, gs=5L) +
 miroBiplot(spe, gs=ig, L=100)
 ```
 
+Because loadings are available for all features underlying PCs
+(i.e., the HVGs selected above), we can also query gene sets, e.g.:
+
+```{r msigdb, fig.width=16, fig.height=8}
+# retrieve hallmark gene sets from 'MSigDB'
+db <- msigdbr(species="Homo sapiens", collection="H")
+# get list of gene symbols, one element per set
+gs <- split(db$gene_symbol, db$gs_name)
+names(gs) <- gsub("HALLMARK_", "", names(gs))
+ps <- lapply(sample(names(gs), 8), \(.) 
+    miroBiplot(spe, gs=gs[[.]]) + ggtitle(.))
+wrap_plots(ps, nrow=2)
+```
+
 # interpretation
 
 ## loadings
@@ -195,7 +287,6 @@ rot <- attr(pcs, "rotation")
 Let's check the expression of a few of these:
 
 ```{r plt-es, fig.width=12, fig.height=6}
-df <- data.frame(spatialCoords(spe))
 ps <- lapply(head(gs, 6), \(.) {
     df[[.]] <- logcounts(spe)[., ]
     ggplot(df, aes(x, y, col=.data[[.]])) 
@@ -226,6 +317,36 @@ miroSpatial(sub) + miroBiplot(sub)
 
 We now start seeing a separation of stem-like epithelia (LGR5) towards the left,
 with mixed borders reflecting bleeding from surrounding stroma (COL3A1, IGFBP5).
+
+# comparison
+
+We'll now compare how UMAP turns out in CIELAB space. Because the orientation 
+of xy-axes is arbitrary, colors will change from one run to the next; yet, we'd
+expect similar things to get similar colors; surprise, UMAP is misleading...
+
+```{r map}
+spe <- runUMAP(spe, dimred="PCA", ncomponents=3, spread=5)
+df[colnames(map)] <- (map <- reducedDim(spe, "UMAP"))
+```
+
+```{r plt-map, fig.width=15, fig.height=9}
+ps <- list(
+    p <- miroSpatial(spe) + ggtitle("PCA-based LAB"),
+    q <- miroSpatial(spe, "UMAP") + ggtitle("UMAP-based LAB"),
+    ggplot(df, aes(x, y, col=RCTD)) + ggtitle("deconvolution") +
+        thm + col_dis + theme(legend.key.size=unit(0, "lines")),
+    ggplot(df, aes(UMAP1, UMAP2, col=p@data$z)) + 
+        thm + scale_color_identity() +
+        theme(aspect.ratio=1),
+    ggplot(df, aes(UMAP1, UMAP2, col=q@data$z)) + 
+        thm + scale_color_identity() +
+        theme(aspect.ratio=1),
+    ggplot(df, aes(UMAP1, UMAP2, col=RCTD)) + 
+        thm + col_dis + theme(
+            aspect.ratio=1,
+            legend.key.size=unit(0, "lines")))
+wrap_plots(ps, nrow=2, guides="collect")
+```
 
 # appendix
 

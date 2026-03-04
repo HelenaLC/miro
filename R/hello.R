@@ -157,7 +157,7 @@ miroBiplot <- \(x, y="PCA", dim=3L, gs=5L, L=75) {
     if (is.null(xy)) stop("missing attribute 'rotation' in 'reducedDim(x, y)'")
     fd <- calcHex(y=xy, dim=dim)
     if (is.character(gs)) {
-        stopifnot(gs %in% rownames(x))
+        gs <- intersect(gs, rownames(xy))
     } else {
         gs <- apply(fd[, c("A", "B")], 2, \(.) tail(names(sort(abs(.))), gs))
         gs <- as.vector(gs)

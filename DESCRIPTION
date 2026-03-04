@@ -25,6 +25,7 @@ Suggests:
   HDF5Array,
   OSTA.data,
   VisiumIO,
+  msigdbr,
   scater,
   scran
 RoxygenNote: 7.3.3
