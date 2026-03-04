@@ -44,6 +44,7 @@ library(patchwork)
 library(HDF5Array)
 library(DropletUtils)
 library(SpatialExperiment)
+library(SpatialExperimentIO)
 set.seed(260303)
 ```
 
@@ -320,6 +321,8 @@ with mixed borders reflecting bleeding from surrounding stroma (COL3A1, IGFBP5).
 
 # comparison
 
+## UMAP
+
 We'll now compare how UMAP turns out in CIELAB space. Because the orientation 
 of xy-axes is arbitrary, colors will change from one run to the next; yet, we'd
 expect similar things to get similar colors; surprise, UMAP is misleading...
@@ -346,6 +349,38 @@ ps <- list(
             aspect.ratio=1,
             legend.key.size=unit(0, "lines")))
 wrap_plots(ps, nrow=2, guides="collect")
+```
+
+## Xenium
+
+We'll now load up some Xenium data on a disjount tissue section from the same publication.
+
+```{r xen}
+# retrieve dataset from OSF
+id <- "Xenium_HumanColon_Oliveira"
+pa <- OSTA.data_load(id, mol=FALSE)
+dir.create(td <- tempfile())
+unzip(pa, exdir=td)
+# read into 'SpatialExperiment'
+xen <- readXeniumSXE(td, addTx=FALSE)
+# area-based normalization
+sizeFactors(xen) <- (. <- xen$cell_area)/median(.)
+(xen <- logNormCounts(xen))
+```
+
+We can now use the Visium-based rotation to compute corresponding PCs.
+The LAB representation recapitulates the broad tissue structure from before, 
+where red = stromal, blue = healthy, and green = malignant epithelium.
+
+```{r plt-xen, fig.width=8, fig.height=6}
+pcs <- reducedDim(spe, "PCA")
+rot <- attr(pcs, "rotation")
+gs <- intersect(rownames(xen), rownames(rot))
+mtx <- t(rot[gs, ]) %*% logcounts(xen)[gs, ]
+reducedDim(xen, "PCA") <- as.matrix(t(mtx))
+# downsample for plotting
+xem <- xen[, sample(ncol(xen), 1e5)]
+miroSpatial(xem, s=0)
 ```
 
 # appendix

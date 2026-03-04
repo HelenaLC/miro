@@ -109,7 +109,7 @@ calcHex <- \(x, y="PCA", dim=3L, t=0, L=NULL) {
 #' @import ggplot2
 #' @export
 
-miroSpatial <- \(x, y="PCA", dim=3L, xy=c("x", "y")) {
+miroSpatial <- \(x, y="PCA", dim=3L, xy=c("x", "y"), s=1) {
     if (is(x, "SpatialExperiment")) {
         xy <- SpatialExperiment::spatialCoords(x)
     } else {
@@ -124,7 +124,7 @@ miroSpatial <- \(x, y="PCA", dim=3L, xy=c("x", "y")) {
     df <- data.frame(xy, z=df$hex)
     ggplot(df, 
         aes(x, y, col=z)) +
-        geom_point(size=1) +
+        geom_point(size=s) +
         scale_color_identity() +
         theme_bw() + coord_equal() +
         theme(panel.grid=element_blank())

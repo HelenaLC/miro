@@ -22,6 +22,7 @@ Imports:
   SingleCellExperiment,
   SummarizedExperiment
 Suggests:
+  SpatialExperimentIO,
   HDF5Array,
   OSTA.data,
   VisiumIO,
