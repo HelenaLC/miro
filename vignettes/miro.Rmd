@@ -8,7 +8,7 @@ output:
   BiocStyle::html_document:
     code_folding: show
     toc_float: true
-    toc_depth: 1
+    toc_depth: 2
 abstract: |
   Todo.
 vignette: |
@@ -246,18 +246,24 @@ wrap_plots(ps, nrow=1)
 
 ## biplot
 
-> TODO: come up w better viz, e.g., circular with repeling labels?
+> TODO: not sure if this is right... features good, but colors silghtly off?
 
 We can also visualize feature loadings in a biplot with the LAB color space 
 as background (note that $L$ remains fixed here). Argument `gs` may be used
-to control which features to include; this can be either a character vector 
-or scalar integer, in which case the top-`gs` features in each dimension 
-will be determined (per absolute values).
+to control how many features to include; a couple options are now supported:
 
-```{r plt-bi, fig.width=6, fig.height=3}
+- passing a character vector to `gs` or an integer, in which case  
+features will be selected according to `how`, where
+- `"abs"` gets top-features (per absolute values)
+- `"uni"` samples the color space uniformly
+- `"min"` gets negatively loaded features
+- `"max"` gets positively loaded features
+
+```{r plt-bi, fig.width=10, fig.height=3}
 ig <- grepv("^IGH", rownames(spe))
-miroBiplot(spe, gs=5L) +
-miroBiplot(spe, gs=ig, L=100)
+miroBiplot(spe, gs=10, how="abs") +
+miroBiplot(spe, gs=ig, L=100, seg=TRUE) +
+miroBiplot(spe, gs=20, how="uni", rad=TRUE)
 ```
 
 Because loadings are available for all features underlying PCs
@@ -268,9 +274,9 @@ Because loadings are available for all features underlying PCs
 db <- msigdbr(species="Homo sapiens", collection="H")
 # get list of gene symbols, one element per set
 gs <- split(db$gene_symbol, db$gs_name)
-names(gs) <- gsub("HALLMARK_", "", names(gs))
-ps <- lapply(sample(names(gs), 8), \(.) 
-    miroBiplot(spe, gs=gs[[.]]) + ggtitle(.))
+# visualize random subset
+names(gs) <- gsub("HALLMARK_", "", names(gs <- sample(gs, 8)))
+ps <- lapply(names(gs), \(.) miroBiplot(spe, gs=gs[[.]]) + ggtitle(.))
 wrap_plots(ps, nrow=2)
 ```
 
@@ -316,7 +322,7 @@ ncol(sub <- spe[, idx])
 tbl <- modelGeneVar(sub)
 hvg <- getTopHVGs(tbl, n=2e3)
 sub <- runPCA(sub, subset_row=hvg)
-miroSpatial(sub) + miroBiplot(sub)
+miroSpatial(sub) + miroBiplot(sub, seg=TRUE)
 ```
 
 We now start seeing a separation of stem-like epithelia (LGR5) towards the left,
@@ -373,7 +379,7 @@ sizeFactors(xen) <- (. <- xen$cell_area)/median(.)
 
 We can now use the Visium-based rotation to compute corresponding PCs.
 The LAB representation recapitulates the broad tissue structure from before, 
-where red = stromal, blue = healthy, and green = malignant epithelium.
+where red = stroma, blue = healthy, and green = malignant epithelium.
 
 ```{r plt-xen, fig.width=8, fig.height=6}
 pcs <- reducedDim(spe, "PCA")

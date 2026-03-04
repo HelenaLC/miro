@@ -138,38 +138,59 @@ miroSpatial <- \(x, y="PCA", dim=3L, xy=c("x", "y"), s=1) {
 #' spe <- readRDS(rds)
 #' miroBiplot(spe, L=70)
 #' miroBiplot(spe, dim=2:4)
-#' miroBiplot(spe, gs=grepv("^IGH", rownames(spe)))
+#' miroBiplot(spe, gs=20, how="uni", seg=TRUE, rad=TRUE)
+#' miroBiplot(spe, gs=grepv("^IGH", rownames(spe)), seg=TRUE)
 #' 
 #' @returns \code{ggplot}
 #'
 #' @importFrom SingleCellExperiment reducedDim
 #' @export
 
-miroBiplot <- \(x, y="PCA", dim=3L, gs=5L, L=75) {
-    #x <- spe; y <- "PCA"; dim <- 3; gs <- grepv("IGH", rownames(spe)); L <- 75
+miroBiplot <- \(x, gs=10, how=c("uni", "abs", "min", "max"), y="PCA", dim=3L, L=75, seg=FALSE, rad=FALSE) {
+    # x <- spe; y <- "PCA"; dim <- 3; L <- 75
+    # gs <- grepv("IGH", rownames(spe)); gs <- 50
+    how <- match.arg(how)
     ab <- seq(-100, 100, 5)
     ab <- expand.grid(ab, ab)
     colnames(ab) <- c("A", "B")
-    abl <- as.matrix(cbind(ab, 0))
-    hex <- calcHex(y=abl, L=L)$hex
-    df <- data.frame(ab, hex)
+    lab <- hex(LAB(L, ab[, 1], ab[, 2]), fixup=TRUE)
+    df <- data.frame(ab, lab)
     xy <- attr(reducedDim(x, y), "rotation")
     if (is.null(xy)) stop("missing attribute 'rotation' in 'reducedDim(x, y)'")
     fd <- calcHex(y=xy, dim=dim)
     if (is.character(gs)) {
         gs <- intersect(gs, rownames(xy))
+    } else if (how == "uni") {
+        # sample color space uniformly
+        is <- seq(1, nrow(ab), l=gs)
+        is <- apply(df[is, c("A", "B")], 1, \(.) {
+            d <- sweep(fd[, c("A", "B")], 2, .)
+            which.min(rowSums(d**2))
+        })
+        gs <- rownames(fd)[is]
     } else {
-        gs <- apply(fd[, c("A", "B")], 2, \(.) tail(names(sort(abs(.))), gs))
-        gs <- as.vector(gs)
+        # selection based on values
+        fun <- switch(how, 
+            min=\(.) names(tail(sort(.), gs)),
+            max=\(.) names(head(sort(.), gs)),
+            abs=\(.) names(tail(sort(abs(.)), gs)))
+        gs <- as.vector(apply(fd[, c("A", "B")], 2, fun))
     }
+    gs <- unique(gs)
     fd <- data.frame(nm=gs, fd[gs, ])
-    ggplot(df, aes(A, B, fill=hex)) + 
+    axs <- if (rad) { list(theme(
+        axis.title=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.minor=element_blank()),
+        coord_radial(start=1.5*pi, end=-1.5*pi))
+    } else list(coord_equal(), theme(panel.grid=element_blank()))
+    ggplot(df, aes(A, B)) + 
         scale_fill_identity() +
-        geom_tile(aes(fill=hex)) +
-        theme_bw() + coord_equal() +
-        theme(panel.grid=element_blank()) +
-        geom_text(aes(label=nm), fd, size=2) +
-        geom_segment(
-            aes(0, xend=.95*A, 0, yend=.95*B), fd, 
-            arrow=arrow(length=unit(2, "mm")), linewidth=0.2)
+        geom_tile(aes(fill=lab)) +
+        geom_vline(xintercept=0, col="white", linewidth=0.2) +
+        geom_hline(yintercept=0, col="white", linewidth=0.2) +
+        (if (seg) geom_segment(aes(0, xend=A, 0, yend=B), fd, linewidth=0.2)) +
+        geom_point(data=fd, size=2, stroke=0.4, shape=21, fill="black", col="white") +
+        ggrepel::geom_text_repel(aes(label=nm), fd, size=2) +
+        theme_bw() + axs
 }

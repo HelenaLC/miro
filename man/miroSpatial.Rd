@@ -4,7 +4,7 @@
 \alias{miroSpatial}
 \title{Spatial plot}
 \usage{
-miroSpatial(x, y = "PCA", dim = 3L, xy = c("x", "y"))
+miroSpatial(x, y = "PCA", dim = 3L, xy = c("x", "y"), s = 1)
 }
 \value{
 \code{ggplot}

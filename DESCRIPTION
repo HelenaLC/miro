@@ -26,6 +26,7 @@ Suggests:
   HDF5Array,
   OSTA.data,
   VisiumIO,
+  ggrepel,
   msigdbr,
   scater,
   scran

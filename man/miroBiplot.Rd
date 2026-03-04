@@ -4,7 +4,16 @@
 \alias{miroBiplot}
 \title{Biplot}
 \usage{
-miroBiplot(x, y = "PCA", dim = 3L, gs = 5L, L = 75)
+miroBiplot(
+  x,
+  gs = 10,
+  how = c("uni", "abs", "min", "max"),
+  y = "PCA",
+  dim = 3L,
+  L = 75,
+  seg = FALSE,
+  rad = FALSE
+)
 }
 \value{
 \code{ggplot}
@@ -18,6 +27,7 @@ rds <- system.file("extdata", "spe.rds", package="miro")
 spe <- readRDS(rds)
 miroBiplot(spe, L=70)
 miroBiplot(spe, dim=2:4)
-miroBiplot(spe, gs=grepv("^IGH", rownames(spe)))
+miroBiplot(spe, gs=20, how="uni", seg=TRUE, rad=TRUE)
+miroBiplot(spe, gs=grepv("^IGH", rownames(spe)), seg=TRUE)
 
 }

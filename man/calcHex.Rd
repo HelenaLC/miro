@@ -4,7 +4,7 @@
 \alias{calcHex}
 \title{Values to colors}
 \usage{
-calcHex(x, y = "PCA", dim = 3L, L = NULL)
+calcHex(x, y = "PCA", dim = 3L, t = 0, L = NULL)
 }
 \value{
 \code{data.frame}
