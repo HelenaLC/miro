@@ -7,6 +7,8 @@ author:
 output:
   BiocStyle::html_document:
     code_folding: show
+    toc_float: true
+    toc_depth: 1
 abstract: |
   Todo.
 vignette: |
@@ -50,9 +52,10 @@ set.seed(260303)
 
 ## data
 
-We'll start out by retrieving vendor outputs with `r Biocpkg("OSTA.data")``,
+We'll start out by retrieving vendor outputs with `r Biocpkg("OSTA.data")`,
 reading data into a `r Biocpkg("SpatialExperiment")` with `r Biocpkg("VisiumIO")`,
 and performing minimal processing, namely:
+
 - log-library size normalization
 - identifying highly variable features
 - principal component analysis (PCA)
