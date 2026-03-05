@@ -75,7 +75,7 @@
 #' @importFrom SingleCellExperiment reducedDimNames reducedDim
 #' @export
 
-calcHex <- \(x, y="PCA", dim=3L, t=0, L=NULL) {
+calcHex <- \(x, y="PCA", dim=3L, gs=NULL, t=0, L=NULL) {
     if (missing(x)) x <- NULL
     if (length(dim) == 1) {
         dim <- seq_len(dim)
@@ -89,6 +89,14 @@ calcHex <- \(x, y="PCA", dim=3L, t=0, L=NULL) {
                 y <- reducedDim(x, y)
             }
         }
+    }
+    if (!is.null(gs)) {
+        rot <- "rotation"
+        stopifnot(rot %in% names(attributes(y)))
+        rot <- attr(y, rot)
+        gs <- intersect(gs, rownames(x))
+        gs <- intersect(gs, rownames(rot))
+        y <- t(t(rot[gs, ]) %*% as.matrix(logcounts(x)[gs, ]))
     }
     stopifnot(ncol(y) > 2, is.numeric(y))
     cbind(y <- y[, dim], .hex(y, t=t, L=L))
@@ -109,7 +117,7 @@ calcHex <- \(x, y="PCA", dim=3L, t=0, L=NULL) {
 #' @import ggplot2
 #' @export
 
-miroSpatial <- \(x, y="PCA", dim=3L, xy=c("x", "y"), s=1) {
+miroSpatial <- \(x, y="PCA", dim=3L, gs=NULL, xy=c("x", "y"), s=1) {
     if (is(x, "SpatialExperiment")) {
         xy <- SpatialExperiment::spatialCoords(x)
     } else {
@@ -120,7 +128,7 @@ miroSpatial <- \(x, y="PCA", dim=3L, xy=c("x", "y"), s=1) {
         xy <- colData(x)[xy]
     }
     colnames(xy) <- c("x", "y")
-    df <- calcHex(x, y, dim)
+    df <- calcHex(x, y, dim, gs)
     df <- data.frame(xy, z=df$hex)
     ggplot(df, 
         aes(x, y, col=z)) +

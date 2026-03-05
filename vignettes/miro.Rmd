@@ -193,9 +193,17 @@ Let's start by visualizing the first three PCs over the tissue. In these data,
 we can observe that they delineate stroma from healthy and malignant epithelium:
 
 ```{r plt-pc, fig.width=12, fig.height=3}
-ps <- lapply(paste0("PC", seq_len(3)), \(.)
-    ggplot(df, aes(x, y, col=.data[[.]])))
-wrap_plots(ps, nrow=1) & thm & col_con
+cs <- list(
+    PC1=c("green", "red"), 
+    PC2=c("blue", "gold"), 
+    PC3=c("black", "grey"))
+lapply(paste0("PC", seq_len(3)), 
+    \(.) ggplot(df, 
+    aes(x, y, col=.data[[.]])) +
+    thm + scale_color_gradient2(
+        low=cs[[.]][1], high=cs[[.]][2],
+        midpoint=sum(range(df[[.]]))/2)) |> 
+    wrap_plots(nrow=1)
 ```
 
 We can now interpret PCs in terms of colors by rescaling and interpreting them
@@ -274,10 +282,25 @@ Because loadings are available for all features underlying PCs
 db <- msigdbr(species="Homo sapiens", collection="H")
 # get list of gene symbols, one element per set
 gs <- split(db$gene_symbol, db$gs_name)
+names(gs) <- gsub("HALLMARK_", "", names(gs))
 # visualize random subset
-names(gs) <- gsub("HALLMARK_", "", names(gs <- sample(gs, 8)))
-ps <- lapply(names(gs), \(.) miroBiplot(spe, gs=gs[[.]]) + ggtitle(.))
-wrap_plots(ps, nrow=2)
+lapply(names(sample(gs, 8)), \(.) 
+    miroBiplot(spe, gs=gs[[.]]) + 
+    ggtitle(.)) |> wrap_plots(nrow=2)
+```
+
+We can now project observations into the subspace spanned by these. For this,
+`miroSpatial()` supports passing a character vector of genes to project:
+
+```{r plt-sig, fig.width=9, fig.height=6}
+rot <- attr(pcs <- reducedDim(spe, "PCA"), "rotation")
+gt <- c("GLYCOLYSIS", "APOPTOSIS", "MYC_TARGETS_V2")
+ps <- lapply(gt, \(.) list(
+    miroSpatial(spe, gs=gs[[.]], s=0.4) + ggtitle(.),
+    miroBiplot(spe, gs=gs[[.]])))
+Reduce(c, ps) |>
+    wrap_plots(nrow=2, byrow=FALSE) & 
+    theme(plot.title=element_text(hjust=0.5))
 ```
 
 # interpretation
@@ -384,12 +407,22 @@ where red = stroma, blue = healthy, and green = malignant epithelium.
 ```{r plt-xen, fig.width=8, fig.height=6}
 pcs <- reducedDim(spe, "PCA")
 rot <- attr(pcs, "rotation")
-gs <- intersect(rownames(xen), rownames(rot))
-mtx <- t(rot[gs, ]) %*% logcounts(xen)[gs, ]
+gt <- intersect(rownames(xen), rownames(rot))
+mtx <- t(rot[gt, ]) %*% logcounts(xen)[gt, ]
 reducedDim(xen, "PCA") <- as.matrix(t(mtx))
 # downsample for plotting
 xem <- xen[, sample(ncol(xen), 1e5)]
+attr(reducedDim(xem), "rotation") <- rot
 miroSpatial(xem, s=0)
+```
+
+Let's query some interesting features just because we can:
+
+```{r fig.width=9, fig.height=6}
+gt <- grepv("^MUC|KRT|CEACAM|SLC|MMP", rownames(xem))
+miroBiplot(xem, gs=gt) +
+miroSpatial(xem, s=0, gs=gt) +
+plot_layout(widths=c(1, 2))
 ```
 
 # appendix
