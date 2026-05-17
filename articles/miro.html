@@ -413,23 +413,22 @@ of genes to project:</p>
 <div class="section level3">
 <h3 id="loadings">loadings<a class="anchor" aria-label="anchor" href="#loadings"></a>
 </h3>
-<p>We can now ask something like “Which genes are driving the red region
-above?”, which would correspond to positive values for PC1; here, these
-contain clear smooth muscle cell markers (MYL9, MHY11, CNN1, DES, TAGLN,
-ACTG2, etc.):</p>
+<p>We can now ask something like “Which genes are driving the colors
+above?”, which would correspond to high negative/positive feature
+loadings:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">emb</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/reducedDims.html" class="external-link">reducedDim</a></span><span class="op">(</span><span class="va">spe</span>, <span class="st">"PCA"</span><span class="op">)</span></span>
 <span><span class="va">rot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/LEM-getset.html" class="external-link">featureLoadings</a></span><span class="op">(</span><span class="va">emb</span><span class="op">)</span></span>
 <span><span class="op">(</span><span class="va">gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/DelayedArray/man/DelayedArray-utils.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">rot</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="fl">2</span>, \<span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">gs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="va">.</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">gs</span>, <span class="fl">2</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">gs</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">##      PC1     PC2     PC3     </span></span>
-<span><span class="co">## [1,] "FABP2" "MATN2" "ACTR5" </span></span>
-<span><span class="co">## [2,] "REP15" "TRIM9" "RHPN1" </span></span>
-<span><span class="co">## [3,] "IGHG1" "FCGBP" "IGFBP3"</span></span>
-<span><span class="co">## [4,] "MGP"   "PIGR"  "DES"</span></span></code></pre>
-<p>Let’s check the expression of a few of these:</p>
+<pre><code><span><span class="co">##      PC1       PC2      PC3     </span></span>
+<span><span class="co">## [1,] "MGP"     "PIGR"   "IGFBP3"</span></span>
+<span><span class="co">## [2,] "IGHG1"   "FCGBP"  "INHBA" </span></span>
+<span><span class="co">## [3,] "CEACAM5" "SPARC"  "SYNM"  </span></span>
+<span><span class="co">## [4,] "CEACAM6" "COL1A1" "DES"</span></span></code></pre>
+<p>Let’s check the expression of these:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">gs</span>, \<span class="op">(</span><span class="va">.</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="fu">.xy</span><span class="op">(</span><span class="va">spe</span>, <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/assays.html" class="external-link">logcounts</a></span><span class="op">(</span><span class="va">spe</span><span class="op">)</span><span class="op">[</span><span class="va">.</span>, <span class="op">]</span><span class="op">)</span> <span class="op">+</span></span>
