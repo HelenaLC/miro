@@ -67,8 +67,8 @@ set.seed(260303)
     lg <- if (grepl("#", df[[i]][1])) 
         scale_color_identity() else
         switch(scale_type(df[[i]]),
-            discrete=scale_color_manual(values=hcl.colors(12, "Spectral")),
-            continuous=scale_color_gradientn(colors=rev(hcl.colors(9, "Batlow"))))
+            continuous=scale_color_gradientn(colors=rev(hcl.colors(9, "Batlow"))),
+            discrete=scale_color_manual(values=hcl.colors(length(unique(df[[i]])), "Spectral")))
     ggplot(df, aes(.data[[x]], .data[[y]], col=.data[[i]])) +
         do.call(geom_point, dots) + lg +
         coord_equal(expand=FALSE) + 
