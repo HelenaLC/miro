@@ -2,17 +2,16 @@
 % Please edit documentation in R/plot.R
 \name{miroBiplot}
 \alias{miroBiplot}
-\title{Biplot}
+\title{Biplot of feature loadings}
 \usage{
 miroBiplot(
   x,
-  y = "PCA",
-  dim = 3L,
-  gs = 10,
+  col = sequence(3),
+  row = 30,
   how = c("uni", "abs", "min", "max"),
-  L = 75,
-  alim = c(-100, 100),
-  blim = c(-100, 100),
+  L = 80,
+  alim = c(-80, 80),
+  blim = alim,
   seg = FALSE,
   ...
 )
@@ -20,11 +19,6 @@ miroBiplot(
 \arguments{
 \item{x}{\code{SingleCellExperiment} (SCE), 
 or a derivative thereof (e.g., SPE, SFE).}
-
-\item{y, dim, alim, blim}{parameters passed to \code{\link{calcHex}}.}
-
-\item{gs}{scalar integer specifying how many features to select,
-or a character vector specifying a fixed set of features.}
 
 \item{how}{character string specifying how to select features:
 uni = uniform sampling across color space,
@@ -34,12 +28,17 @@ min/max = select based on lowest/highest values.}
 \item{L}{scalar numeric in [0, 100] for background luminance.}
 
 \item{seg}{logical; whether or not to add \code{geom_segment} layer.}
+
+\item{gs}{scalar integer specifying how many features to select,
+or a character vector specifying a fixed set of features.}
+
+\item{y, dim, alim, blim}{parameters passed to \code{\link{calcHex}}.}
 }
 \value{
 \code{ggplot}
 }
 \description{
-Biplot
+Biplot of feature loadings
 }
 \examples{
 spe <- readRDS(system.file("extdata", "spe.rds", package="miro"))

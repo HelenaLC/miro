@@ -22,7 +22,7 @@
 #' @import ggplot2
 #' @export
 
-miroSpatial <- \(x, xy=c("x", "y"), ...) {
+miroSpatial <- \(x, y=NULL, xy=c("x", "y"), ...) {
     # validity
     .data <- NULL
     dot <- list(...)
@@ -36,6 +36,8 @@ miroSpatial <- \(x, xy=c("x", "y"), ...) {
             xy <- colData(x)[xy]
         } else stop("'x' should be a SCE-like object.")
     }
+    # projection
+    if (!is.null(y)) x <- calcMap(x, y, row=row)
     # wrangling
     colnames(xy) <- c("x", "y")
     use <- which(names(dot) %in% names(formals(calcHex)))
@@ -51,7 +53,7 @@ miroSpatial <- \(x, xy=c("x", "y"), ...) {
         theme_void() + coord_equal()
 }
 
-#' @title Biplot
+#' @title Biplot of feature loadings
 #'
 #' @param x \code{SingleCellExperiment} (SCE), 
 #'   or a derivative thereof (e.g., SPE, SFE).
@@ -65,6 +67,8 @@ miroSpatial <- \(x, xy=c("x", "y"), ...) {
 #' @param y,dim,alim,blim parameters passed to \code{\link{calcHex}}.
 #' @param seg logical; whether or not to add \code{geom_segment} layer.
 #'
+#' @returns \code{ggplot}
+#' 
 #' @examples
 #' spe <- readRDS(system.file("extdata", "spe.rds", package="miro"))
 #' 
@@ -73,33 +77,53 @@ miroSpatial <- \(x, xy=c("x", "y"), ...) {
 #' miroBiplot(spe, gs=40, how="uni")
 #' miroBiplot(spe, gs=grepv("^IGH", rownames(spe)), seg=TRUE)
 #' 
-#' @returns \code{ggplot}
-#'
-#' @importFrom SingleCellExperiment reducedDim
 #' @export
+#' @importFrom SingleCellExperiment reducedDim
+#' @importFrom SingleCellExperiment featureLoadings
+miroBiplot <- \(x, col=sequence(3), 
+    row=30, how=c("uni", "abs", "min", "max"), 
+    L=80, alim=c(-80, 80), blim=alim, seg=FALSE, ...) {
 
-miroBiplot <- \(x, 
-    y="PCA", dim=3L, gs=10, how=c("uni", "abs", "min", "max"), 
-    L=75, alim=c(-100, 100), blim=c(-100, 100), seg=FALSE, ...) {
+    if (is(x, "SingleCellExperiment")) 
+        x <- reducedDim(x, "PCA")
+    if (is(x, "LinearEmbeddingMatrix")) {
+        x <- featureLoadings(x)
+    } else {
+        if (is.null(x <- attr(x, "rotation"))) 
+            stop("missing 'attr(x, \"rotation\"')'")
+    }
+    xy <- x
+    
     # validity
     dot <- list(...)
     how <- match.arg(how)
     df <- .bg(L, alim, blim)
+    
     # loadings
-    xy <- attr(reducedDim(x, y), "rotation")
-    if (is.null(xy)) stop("Missing 'rotation' attribute.")
-    fd <- calcHex(y=xy, dim=dim, alim=alim, blim=blim)
+    fd <- calcHex(xy, col=col, alim=alim, blim=blim)
+    
     # selection
-    if (is.character(gs)) {
+    if (is.character(gs <- row)) {
         gs <- intersect(gs, rownames(xy))
     } else if (how == "uni") {
         # sample color space uniformly
-        is <- seq(1, nrow(df), l=gs)
-        is <- apply(df[is, c("A", "B")], 1, \(.) {
-            d <- sweep(fd[, c("A", "B")], 2, .)
-            which.min(rowSums(d**2))
+        ds <- head(intersect(names(fd), colnames(xy)), 2)
+        # get features-wise angles
+        th <- vapply(rownames(xy), \(.) .th(c(1, 0), xy[., ds]), numeric(1))
+        # split into 'gs' groups of similar angles
+        th <- split(th <- sort(th), cut(th, gs, FALSE))
+        # get feature-wise lengths
+        ls <- lapply(seq_along(th), \(i) {
+            js <- seq_along(th[[i]])
+            names(js) <- names(th[[i]])
+            vapply(js, \(j) {
+                g <- names(th[[i]][j])
+                sqrt(sum(xy[g, ds]**2))
+            }, numeric(1))
         })
-        gs <- rownames(fd)[is]
+        # select longest from each group
+        th <- lapply(seq_len(gs), \(.) th[[.]][names(sort(-ls[[.]]))])
+        gs <- vapply(th, \(.) names(.)[1], character(1))
     } else {
         # selection based on values
         fun <- switch(how, 
@@ -109,6 +133,7 @@ miroBiplot <- \(x,
         gs <- as.vector(apply(fd[, c("A", "B")], 2, fun))
     }
     fd <- data.frame(nm=gs <- unique(gs), fd[gs, ])
+    
     # plotting
     ggplot(df, aes(A, B)) + 
         scale_fill_identity() +
@@ -120,6 +145,9 @@ miroBiplot <- \(x,
         theme_bw() + coord_equal() + theme(panel.grid=element_blank()) +
         ggrepel::geom_text_repel(aes(label=nm), fd, size=2)
 }
+
+# get angle b/w two vectors (in radians, modulo 2π)
+.th <- \(x, y) atan2(y[2],y[1])-atan2(x[2],x[1])
 
 #' @importFrom colorspace hex LAB
 .bg <- \(L=75, 

@@ -6,10 +6,9 @@
 \usage{
 calcHex(
   x,
-  y = "PCA",
-  dim = 3L,
-  gs = NULL,
-  assay = "logcounts",
+  col = sequence(3),
+  how = c("lab", "rgb"),
+  q = 0,
   t = 0,
   L = NULL,
   llim = c(10, 90),
@@ -20,6 +19,14 @@ calcHex(
 \arguments{
 \item{x}{a \code{SingleCellExperiment} (SCE), 
 or derivative thereof (e.g., SPE, SFE).}
+
+\item{t}{scalar numeric specifying rotation angle.}
+
+\item{L}{scalar numeric in [0, 100] for luminance.}
+
+\item{llim, alim, blim}{length-2 numeric vectors
+specifying \link[colorspace]{\code{LAB}} limits;
+input coordinates will be rescaled to these ranges.}
 
 \item{y}{character string or integer scalar
 specifying which \code{reducedDim(x)} to use.}
@@ -33,14 +40,6 @@ and the rotation of \code{y} will be used.}
 
 \item{assay}{data to use for projection;
 ignored when \code{gs} not specified.}
-
-\item{t}{scalar numeric specifying rotation angle.}
-
-\item{L}{scalar numeric in [0, 100] for luminance.}
-
-\item{llim, alim, blim}{length-2 numeric vectors
-specifying \link[colorspace]{\code{LAB}} limits;
-input coordinates will be rescaled to these ranges.}
 }
 \value{
 \code{data.frame}

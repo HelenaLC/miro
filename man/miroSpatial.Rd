@@ -4,7 +4,7 @@
 \alias{miroSpatial}
 \title{Spatial plot}
 \usage{
-miroSpatial(x, xy = c("x", "y"), ...)
+miroSpatial(x, y = NULL, xy = c("x", "y"), ...)
 }
 \arguments{
 \item{x}{\code{SingleCellExperiment} (SCE), 
@@ -26,6 +26,7 @@ Spatial plot
 \examples{
 spe <- readRDS(system.file("extdata", "spe.rds", package="miro"))
 
+miroSpatial(spe)
 miroSpatial(spe, dim=seq(3, 5))
 miroSpatial(spe, size=2, alpha=2/3)
 

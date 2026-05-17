@@ -1,2 +1,5 @@
-vignettes/*_cache
+figs/
+*.key
+*.html
 vignettes/*_files
+vignettes/*_cache

@@ -11,6 +11,13 @@ test_that(".q", {
     expect_identical(qs, range(y, na.rm=TRUE), ignore_attr=TRUE)
 })
 
+test_that(".th", {
+    expect_identical(.th(c(0,1), c(0,1)), 0)
+    expect_identical(.th(c( 1,0), c(-1,0)), +pi)
+    expect_identical(.th(c(-1,0), c( 1,0)), -pi)
+    expect_identical(.th(c(1,0), c(0,1)), pi/2)
+})
+
 test_that(".rot", {
     xy <- replicate(2, runif(33))
     expect_error(.rot(xy, "foo"))
