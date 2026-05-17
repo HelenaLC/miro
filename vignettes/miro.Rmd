@@ -321,9 +321,6 @@ lapply(gs, \(.) {
     theme(legend.position="none")
 ```
 
-We now start seeing a separation of stem-like epithelia (LGR5) towards the left,
-with mixed borders reflecting bleeding from surrounding stroma (COL3A1, IGFBP5).
-
 # projection
 
 We'll now load up some Xenium data on a disjoint tissue section from the same publication.
