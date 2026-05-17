@@ -13,7 +13,7 @@ EDA based on color representations of molecular variation via:
 1. Rescaling transcription-derived principal components (PCs) 
 so they can be interpreted as colors in a perceptually meaningful way.
 2. Visualizing these colors in Euclidean space, yielding a tissue image.
-3. Rotations of the underlying PC space help identify which 
+3. Considering rotations of the underlying PC space help identify which 
 features contribute most strongly to observed spatial patterns.
 
 ![](vignettes/schematic.png)
