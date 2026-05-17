@@ -298,20 +298,19 @@ Reduce(c, ps) |>
 
 ## loadings
 
-We can now ask something like "Which genes are driving the red region above?", 
-which would correspond to positive values for PC1; here, these contain clear
-smooth muscle cell markers (MYL9, MHY11, CNN1, DES, TAGLN, ACTG2, etc.):
+We can now ask something like "Which genes are driving the colors above?", 
+which would correspond to high negative/positive feature loadings:
 
 ```{r}
 emb <- reducedDim(spe, "PCA")
 rot <- featureLoadings(emb)
 (gs <- apply(rot[, 1:3], 2, \(.) {
-    gs <- names(sort(abs(.)))
+    gs <- names(sort(.))
     c(head(gs, 2), tail(gs, 2))
 }))
 ```
 
-Let's check the expression of a few of these:
+Let's check the expression of these:
 
 ```{r plt-es, fig.width=12, fig.height=9}
 lapply(gs, \(.) {
