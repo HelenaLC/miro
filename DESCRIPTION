@@ -24,6 +24,7 @@ Suggests:
     SpatialExperimentIO,
     SpatialExperiment,
     BiocStyle,
+    patchwork,
     HDF5Array,
     OSTA.data,
     VisiumIO,
