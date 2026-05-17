@@ -24,3 +24,4 @@ region (bottom); epi. = intestinal epithelium, tum. = colorectal cancer.
 $b\in[-100,100]$ (blue–yellow), and $L\in[0,100]$ (dark–light).
 **(c)** Scatter plot of principal components (PCs) 1–3 with points (= cells) colored by LAB.
 **(d)** Spatial plots with spots colored by the LAB interpretation of PCs 1-3 as ABL, and PCs 1-3.
+Note that (c-b) could be based off any other PCs, not necessarily the first 3.
