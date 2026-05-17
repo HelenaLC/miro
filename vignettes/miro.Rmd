@@ -34,7 +34,6 @@ a single tissue section from a colorectal cancer biopsy [@deOliveira2025].
 ## libs
 
 ```{r load-deps}
-library(pals)
 library(miro)
 library(ggplot2)
 library(msigdbr)
@@ -68,7 +67,7 @@ set.seed(260303)
     lg <- if (grepl("#", df[[i]][1])) 
         scale_color_identity() else
         switch(scale_type(df[[i]]),
-            discrete=scale_color_manual(values=unname(trubetskoy())),
+            discrete=scale_color_manual(values=hcl.colors(12, "Spectral")),
             continuous=scale_color_gradientn(colors=rev(hcl.colors(9, "Batlow"))))
     ggplot(df, aes(.data[[x]], .data[[y]], col=.data[[i]])) +
         do.call(geom_point, dots) + lg +
